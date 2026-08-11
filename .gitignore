@@ -4,6 +4,14 @@ DerivedDataSlotMachineSuite/
 DerivedDataPods/
 SwiftModuleCache/
 Pods/
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+*.iml
 *.xcworkspace/xcuserdata/
 *.xcworkspace/xcshareddata/WorkspaceSettings.xcsettings
 *.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist
