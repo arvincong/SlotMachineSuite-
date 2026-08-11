@@ -16,6 +16,8 @@
 		0A1111111111111111111107 /* ControlPanelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A1111111111111111111007 /* ControlPanelView.swift */; };
 		0A1111111111111111111108 /* PaytableView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A1111111111111111111008 /* PaytableView.swift */; };
 		0A1111111111111111111109 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0A1111111111111111111009 /* Assets.xcassets */; };
+		0A1111111111111111111110 /* AttributionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A1111111111111111111011 /* AttributionManager.swift */; };
+		C03044E2730E40349F46E8BF /* Pods_SlotMachineSuite.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4C7C52F55C259CC13E398BB9 /* Pods_SlotMachineSuite.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -30,6 +32,10 @@
 		0A1111111111111111111008 /* PaytableView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaytableView.swift; sourceTree = "<group>"; };
 		0A1111111111111111111009 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		0A1111111111111111111010 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		0A1111111111111111111011 /* AttributionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttributionManager.swift; sourceTree = "<group>"; };
+		16F63FDCFF11D8B509A8730F /* Pods-SlotMachineSuite.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-SlotMachineSuite.release.xcconfig"; path = "Target Support Files/Pods-SlotMachineSuite/Pods-SlotMachineSuite.release.xcconfig"; sourceTree = "<group>"; };
+		4C7C52F55C259CC13E398BB9 /* Pods_SlotMachineSuite.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_SlotMachineSuite.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		A34C63E4B9EA7ED8451F248F /* Pods-SlotMachineSuite.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-SlotMachineSuite.debug.xcconfig"; path = "Target Support Files/Pods-SlotMachineSuite/Pods-SlotMachineSuite.debug.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -37,6 +43,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C03044E2730E40349F46E8BF /* Pods_SlotMachineSuite.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -48,6 +55,8 @@
 			children = (
 				0A1111111111111111111301 /* SlotMachineSuite */,
 				0A1111111111111111111302 /* Products */,
+				938C90164BC5186E83CF5334 /* Pods */,
+				CBE52F4C9C00DA584E6BA229 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -56,7 +65,7 @@
 			children = (
 				0A1111111111111111111010 /* Info.plist */,
 				0A1111111111111111111009 /* Assets.xcassets */,
-				0A1111111111111111111303 /* Sources */,
+				0A1111111111111111111303 /* SlotMachineSuite */,
 			);
 			path = SlotMachineSuite;
 			sourceTree = "<group>";
@@ -69,7 +78,7 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		0A1111111111111111111303 /* Sources */ = {
+		0A1111111111111111111303 /* SlotMachineSuite */ = {
 			isa = PBXGroup;
 			children = (
 				0A1111111111111111111001 /* SlotMachineSuiteApp.swift */,
@@ -80,8 +89,27 @@
 				0A1111111111111111111006 /* HeaderViews.swift */,
 				0A1111111111111111111007 /* ControlPanelView.swift */,
 				0A1111111111111111111008 /* PaytableView.swift */,
+				0A1111111111111111111011 /* AttributionManager.swift */,
 			);
 			path = SlotMachineSuite;
+			sourceTree = "<group>";
+		};
+		938C90164BC5186E83CF5334 /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				A34C63E4B9EA7ED8451F248F /* Pods-SlotMachineSuite.debug.xcconfig */,
+				16F63FDCFF11D8B509A8730F /* Pods-SlotMachineSuite.release.xcconfig */,
+			);
+			name = Pods;
+			path = Pods;
+			sourceTree = "<group>";
+		};
+		CBE52F4C9C00DA584E6BA229 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				4C7C52F55C259CC13E398BB9 /* Pods_SlotMachineSuite.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -91,6 +119,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 0A1111111111111111111802 /* Build configuration list for PBXNativeTarget "SlotMachineSuite" */;
 			buildPhases = (
+				B0B16B6528C244049D41A607 /* [CP] Check Pods Manifest.lock */,
 				0A1111111111111111111202 /* Sources */,
 				0A1111111111111111111201 /* Frameworks */,
 				0A1111111111111111111203 /* Resources */,
@@ -148,6 +177,31 @@
 		};
 /* End PBXResourcesBuildPhase section */
 
+/* Begin PBXShellScriptBuildPhase section */
+		B0B16B6528C244049D41A607 /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-SlotMachineSuite-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
 		0A1111111111111111111202 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
@@ -161,6 +215,7 @@
 				0A1111111111111111111106 /* HeaderViews.swift in Sources */,
 				0A1111111111111111111107 /* ControlPanelView.swift in Sources */,
 				0A1111111111111111111108 /* PaytableView.swift in Sources */,
+				0A1111111111111111111110 /* AttributionManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -281,6 +336,7 @@
 		};
 		0A1111111111111111111701 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = A34C63E4B9EA7ED8451F248F /* Pods-SlotMachineSuite.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -309,6 +365,7 @@
 		};
 		0A1111111111111111111702 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 16F63FDCFF11D8B509A8730F /* Pods-SlotMachineSuite.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;

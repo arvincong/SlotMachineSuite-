@@ -1,6 +1,11 @@
 DerivedData/
 DerivedDataDevice/
 DerivedDataSlotMachineSuite/
+DerivedDataPods/
 SwiftModuleCache/
+Pods/
+*.xcworkspace/xcuserdata/
+*.xcworkspace/xcshareddata/WorkspaceSettings.xcsettings
+*.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist
 *.xcuserdata/
 *.xcuserstate

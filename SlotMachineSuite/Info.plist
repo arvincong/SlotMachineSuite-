@@ -22,6 +22,16 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>AppsFlyerDevKey</key>
+	<string></string>
+	<key>AppsFlyerAppID</key>
+	<string></string>
+	<key>AdjustAppToken</key>
+	<string></string>
+	<key>AdjustEnvironment</key>
+	<string>production</string>
+	<key>NSUserTrackingUsageDescription</key>
+	<string>This identifier is used to measure advertising performance and improve the app experience.</string>
 	<key>UILaunchScreen</key>
 	<dict>
 		<key>UIColorName</key>
