@@ -123,6 +123,8 @@
 				0A1111111111111111111202 /* Sources */,
 				0A1111111111111111111201 /* Frameworks */,
 				0A1111111111111111111203 /* Resources */,
+				890DFF743BA1E455E9190971 /* [CP] Embed Pods Frameworks */,
+				9093BCA10E621FA7A32EBD78 /* [CP] Copy Pods Resources */,
 			);
 			buildRules = (
 			);
@@ -178,6 +180,40 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
+		890DFF743BA1E455E9190971 /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-SlotMachineSuite/Pods-SlotMachineSuite-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-SlotMachineSuite/Pods-SlotMachineSuite-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-SlotMachineSuite/Pods-SlotMachineSuite-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		9093BCA10E621FA7A32EBD78 /* [CP] Copy Pods Resources */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-SlotMachineSuite/Pods-SlotMachineSuite-resources-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			name = "[CP] Copy Pods Resources";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-SlotMachineSuite/Pods-SlotMachineSuite-resources-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-SlotMachineSuite/Pods-SlotMachineSuite-resources.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
 		B0B16B6528C244049D41A607 /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;

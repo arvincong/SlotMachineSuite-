@@ -1,0 +1,61 @@
+PODS:
+  - Adjust/Adjust (5.7.0):
+    - AdjustSignature (= 3.67.0)
+  - Adjust/AdjustGoogleOdm (5.7.0):
+    - Adjust/Adjust
+  - AdjustSignature (3.67.0)
+  - AppsFlyerFramework (7.0.0):
+    - AppsFlyerFramework/Main (= 7.0.0)
+  - AppsFlyerFramework/Main (7.0.0)
+  - GoogleAdsOnDeviceConversion (3.6.1):
+    - GoogleUtilities/Environment (~> 8.1)
+    - GoogleUtilities/Logger (~> 8.1)
+    - GoogleUtilities/Network (~> 8.1)
+    - nanopb (~> 3.30910.0)
+  - GoogleUtilities/Environment (8.1.1):
+    - GoogleUtilities/Privacy
+  - GoogleUtilities/Logger (8.1.1):
+    - GoogleUtilities/Environment
+    - GoogleUtilities/Privacy
+  - GoogleUtilities/Network (8.1.1):
+    - GoogleUtilities/Logger
+    - "GoogleUtilities/NSData+zlib"
+    - GoogleUtilities/Privacy
+    - GoogleUtilities/Reachability
+  - "GoogleUtilities/NSData+zlib (8.1.1)":
+    - GoogleUtilities/Privacy
+  - GoogleUtilities/Privacy (8.1.1)
+  - GoogleUtilities/Reachability (8.1.1):
+    - GoogleUtilities/Logger
+    - GoogleUtilities/Privacy
+  - nanopb (3.30910.0):
+    - nanopb/decode (= 3.30910.0)
+    - nanopb/encode (= 3.30910.0)
+  - nanopb/decode (3.30910.0)
+  - nanopb/encode (3.30910.0)
+
+DEPENDENCIES:
+  - Adjust/AdjustGoogleOdm (>= 5.4.1)
+  - AppsFlyerFramework (>= 7.0.0)
+  - GoogleAdsOnDeviceConversion
+
+SPEC REPOS:
+  trunk:
+    - Adjust
+    - AdjustSignature
+    - AppsFlyerFramework
+    - GoogleAdsOnDeviceConversion
+    - GoogleUtilities
+    - nanopb
+
+SPEC CHECKSUMS:
+  Adjust: 3fbf26d0880cb25d15653d68278c0c8771718458
+  AdjustSignature: 9498705a4ac67b719e31828be4d74fbb8656950c
+  AppsFlyerFramework: bd70c8b8d7be170665706bfbf292de89d36bc348
+  GoogleAdsOnDeviceConversion: e3b71da24ff4cf01cf520756ac1c2b93c07b86ff
+  GoogleUtilities: 4f2618a4a1e762a1ee134a1e2323bba9843e06da
+  nanopb: fad817b59e0457d11a5dfbde799381cd727c1275
+
+PODFILE CHECKSUM: 283b9d1291acf5ffeef57ea6366eb88327259185
+
+COCOAPODS: 1.16.2
