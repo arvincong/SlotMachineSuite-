@@ -1,0 +1,6 @@
+DerivedData/
+DerivedDataDevice/
+DerivedDataSlotMachineSuite/
+SwiftModuleCache/
+*.xcuserdata/
+*.xcuserstate
