@@ -7,32 +7,28 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		0A1111111111111111111101 /* SlotMachineSuiteApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A1111111111111111111001 /* SlotMachineSuiteApp.swift */; };
-		0A1111111111111111111102 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A1111111111111111111002 /* ContentView.swift */; };
-		0A1111111111111111111103 /* SlotGameViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A1111111111111111111003 /* SlotGameViewModel.swift */; };
-		0A1111111111111111111104 /* SlotSymbol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A1111111111111111111004 /* SlotSymbol.swift */; };
-		0A1111111111111111111105 /* SlotMachineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A1111111111111111111005 /* SlotMachineView.swift */; };
-		0A1111111111111111111106 /* HeaderViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A1111111111111111111006 /* HeaderViews.swift */; };
-		0A1111111111111111111107 /* ControlPanelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A1111111111111111111007 /* ControlPanelView.swift */; };
-		0A1111111111111111111108 /* PaytableView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A1111111111111111111008 /* PaytableView.swift */; };
 		0A1111111111111111111109 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0A1111111111111111111009 /* Assets.xcassets */; };
-		0A1111111111111111111110 /* AttributionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A1111111111111111111011 /* AttributionManager.swift */; };
+		0B1111111111111111111101 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 0B1111111111111111111001 /* main.m */; };
+		0B1111111111111111111102 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 0B1111111111111111111003 /* AppDelegate.m */; };
+		0B1111111111111111111103 /* AttributionManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 0B1111111111111111111005 /* AttributionManager.m */; };
+		0B1111111111111111111104 /* SlotGame.m in Sources */ = {isa = PBXBuildFile; fileRef = 0B1111111111111111111007 /* SlotGame.m */; };
+		0B1111111111111111111105 /* SlotMachineViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 0B1111111111111111111009 /* SlotMachineViewController.m */; };
 		C03044E2730E40349F46E8BF /* Pods_SlotMachineSuite.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4C7C52F55C259CC13E398BB9 /* Pods_SlotMachineSuite.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		0A1111111111111111111000 /* SlotMachineSuite.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SlotMachineSuite.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		0A1111111111111111111001 /* SlotMachineSuiteApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SlotMachineSuiteApp.swift; sourceTree = "<group>"; };
-		0A1111111111111111111002 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
-		0A1111111111111111111003 /* SlotGameViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SlotGameViewModel.swift; sourceTree = "<group>"; };
-		0A1111111111111111111004 /* SlotSymbol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SlotSymbol.swift; sourceTree = "<group>"; };
-		0A1111111111111111111005 /* SlotMachineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SlotMachineView.swift; sourceTree = "<group>"; };
-		0A1111111111111111111006 /* HeaderViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeaderViews.swift; sourceTree = "<group>"; };
-		0A1111111111111111111007 /* ControlPanelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ControlPanelView.swift; sourceTree = "<group>"; };
-		0A1111111111111111111008 /* PaytableView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaytableView.swift; sourceTree = "<group>"; };
 		0A1111111111111111111009 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		0A1111111111111111111010 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		0A1111111111111111111011 /* AttributionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttributionManager.swift; sourceTree = "<group>"; };
+		0B1111111111111111111001 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
+		0B1111111111111111111002 /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
+		0B1111111111111111111003 /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
+		0B1111111111111111111004 /* AttributionManager.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AttributionManager.h; sourceTree = "<group>"; };
+		0B1111111111111111111005 /* AttributionManager.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AttributionManager.m; sourceTree = "<group>"; };
+		0B1111111111111111111006 /* SlotGame.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SlotGame.h; sourceTree = "<group>"; };
+		0B1111111111111111111007 /* SlotGame.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = SlotGame.m; sourceTree = "<group>"; };
+		0B1111111111111111111008 /* SlotMachineViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SlotMachineViewController.h; sourceTree = "<group>"; };
+		0B1111111111111111111009 /* SlotMachineViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = SlotMachineViewController.m; sourceTree = "<group>"; };
 		16F63FDCFF11D8B509A8730F /* Pods-SlotMachineSuite.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-SlotMachineSuite.release.xcconfig"; path = "Target Support Files/Pods-SlotMachineSuite/Pods-SlotMachineSuite.release.xcconfig"; sourceTree = "<group>"; };
 		4C7C52F55C259CC13E398BB9 /* Pods_SlotMachineSuite.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_SlotMachineSuite.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		A34C63E4B9EA7ED8451F248F /* Pods-SlotMachineSuite.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-SlotMachineSuite.debug.xcconfig"; path = "Target Support Files/Pods-SlotMachineSuite/Pods-SlotMachineSuite.debug.xcconfig"; sourceTree = "<group>"; };
@@ -81,15 +77,15 @@
 		0A1111111111111111111303 /* SlotMachineSuite */ = {
 			isa = PBXGroup;
 			children = (
-				0A1111111111111111111001 /* SlotMachineSuiteApp.swift */,
-				0A1111111111111111111002 /* ContentView.swift */,
-				0A1111111111111111111003 /* SlotGameViewModel.swift */,
-				0A1111111111111111111004 /* SlotSymbol.swift */,
-				0A1111111111111111111005 /* SlotMachineView.swift */,
-				0A1111111111111111111006 /* HeaderViews.swift */,
-				0A1111111111111111111007 /* ControlPanelView.swift */,
-				0A1111111111111111111008 /* PaytableView.swift */,
-				0A1111111111111111111011 /* AttributionManager.swift */,
+				0B1111111111111111111001 /* main.m */,
+				0B1111111111111111111002 /* AppDelegate.h */,
+				0B1111111111111111111003 /* AppDelegate.m */,
+				0B1111111111111111111004 /* AttributionManager.h */,
+				0B1111111111111111111005 /* AttributionManager.m */,
+				0B1111111111111111111006 /* SlotGame.h */,
+				0B1111111111111111111007 /* SlotGame.m */,
+				0B1111111111111111111008 /* SlotMachineViewController.h */,
+				0B1111111111111111111009 /* SlotMachineViewController.m */,
 			);
 			path = SlotMachineSuite;
 			sourceTree = "<group>";
@@ -243,15 +239,11 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				0A1111111111111111111101 /* SlotMachineSuiteApp.swift in Sources */,
-				0A1111111111111111111102 /* ContentView.swift in Sources */,
-				0A1111111111111111111103 /* SlotGameViewModel.swift in Sources */,
-				0A1111111111111111111104 /* SlotSymbol.swift in Sources */,
-				0A1111111111111111111105 /* SlotMachineView.swift in Sources */,
-				0A1111111111111111111106 /* HeaderViews.swift in Sources */,
-				0A1111111111111111111107 /* ControlPanelView.swift in Sources */,
-				0A1111111111111111111108 /* PaytableView.swift in Sources */,
-				0A1111111111111111111110 /* AttributionManager.swift in Sources */,
+				0B1111111111111111111101 /* main.m in Sources */,
+				0B1111111111111111111102 /* AppDelegate.m in Sources */,
+				0B1111111111111111111103 /* AttributionManager.m in Sources */,
+				0B1111111111111111111104 /* SlotGame.m in Sources */,
+				0B1111111111111111111105 /* SlotMachineViewController.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
