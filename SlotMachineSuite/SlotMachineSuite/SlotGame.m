@@ -88,6 +88,14 @@
 
 @end
 
+@interface SlotGame ()
+
+- (void)advanceSpinAtTick:(NSInteger)tick
+                      step:(void (^ _Nullable)(void))step
+                completion:(void (^ _Nullable)(void))completion;
+
+@end
+
 @implementation SlotGame
 
 - (instancetype)init {
@@ -138,7 +146,8 @@
     _reels = [self randomReels];
 }
 
-- (void)beginSpinWithStep:(void (^)(void))step completion:(void (^)(void))completion {
+- (void)beginSpinWithStep:(void (^ _Nullable)(void))step
+               completion:(void (^ _Nullable)(void))completion {
     if (self.spinning) {
         return;
     }
@@ -157,45 +166,51 @@
     _message = @"Spinning";
     _spinning = YES;
 
-    __block NSInteger tick = 0;
-    __block void (^advance)(void);
-    advance = ^{
-        if (tick < 18) {
-            self->_reels = [self randomReels];
-            if (step) {
-                step();
-            }
-            tick += 1;
-            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)((0.045 + tick * 0.005) * NSEC_PER_SEC)), dispatch_get_main_queue(), advance);
-            return;
-        }
+    [self advanceSpinAtTick:0 step:step completion:completion];
+}
 
+- (void)advanceSpinAtTick:(NSInteger)tick
+                      step:(void (^ _Nullable)(void))step
+                completion:(void (^ _Nullable)(void))completion {
+    if (tick < 18) {
         self->_reels = [self randomReels];
-        NSDictionary *result = [self evaluateReels:self.reels];
-        NSInteger total = [result[@"total"] integerValue];
-        NSInteger jackpotWin = [result[@"jackpotWin"] integerValue];
-        self->_lastWin = total;
-        self->_balance += total;
-        self->_spinCount += 1;
-
-        if (jackpotWin > 0) {
-            self->_message = @"Grand jackpot";
-            self->_jackpot = 1250000;
-        } else if (total > self.bet * 20) {
-            self->_message = @"Mega win";
-        } else if (total > 0) {
-            self->_message = @"Nice win";
-        } else {
-            self->_message = @"Try again";
+        if (step) {
+            step();
         }
 
-        self->_spinning = NO;
-        if (completion) {
-            completion();
-        }
-    };
+        NSInteger nextTick = tick + 1;
+        NSTimeInterval delay = 0.045 + (nextTick * 0.005);
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delay * NSEC_PER_SEC)),
+                       dispatch_get_main_queue(),
+                       ^{
+            [self advanceSpinAtTick:nextTick step:step completion:completion];
+        });
+        return;
+    }
 
-    advance();
+    self->_reels = [self randomReels];
+    NSDictionary *result = [self evaluateReels:self.reels];
+    NSInteger total = [result[@"total"] integerValue];
+    NSInteger jackpotWin = [result[@"jackpotWin"] integerValue];
+    self->_lastWin = total;
+    self->_balance += total;
+    self->_spinCount += 1;
+
+    if (jackpotWin > 0) {
+        self->_message = @"Grand jackpot";
+        self->_jackpot = 1250000;
+    } else if (total > self.bet * 20) {
+        self->_message = @"Mega win";
+    } else if (total > 0) {
+        self->_message = @"Nice win";
+    } else {
+        self->_message = @"Try again";
+    }
+
+    self->_spinning = NO;
+    if (completion) {
+        completion();
+    }
 }
 
 - (NSDictionary<NSString *, NSNumber *> *)evaluateReels:(NSArray<NSArray<SlotSymbol *> *> *)reels {

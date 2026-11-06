@@ -1,6 +1,8 @@
 #import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>
 
+NS_ASSUME_NONNULL_BEGIN
+
 typedef NS_ENUM(NSInteger, SlotSymbolType) {
     SlotSymbolTypeNova,
     SlotSymbolTypeCrown,
@@ -42,7 +44,10 @@ typedef NS_ENUM(NSInteger, SlotSymbolType) {
 - (void)decreaseBet;
 - (void)maxBet;
 - (void)resetSession;
-- (void)beginSpinWithStep:(void (^)(void))step completion:(void (^)(void))completion;
+- (void)beginSpinWithStep:(void (^ _Nullable)(void))step
+               completion:(void (^ _Nullable)(void))completion;
 - (NSArray<NSDictionary<NSString *, id> *> *)paylines;
 
 @end
+
+NS_ASSUME_NONNULL_END
