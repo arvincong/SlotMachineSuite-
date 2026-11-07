@@ -1,5 +1,31 @@
 #import "SlotMachineViewController.h"
 #import "SlotGame.h"
+#import <QuartzCore/QuartzCore.h>
+#import <math.h>
+
+static UIImage *CelebrationParticleImage(void) {
+    UIGraphicsImageRendererFormat *format = [UIGraphicsImageRendererFormat defaultFormat];
+    format.scale = 2.0;
+    UIGraphicsImageRenderer *renderer = [[UIGraphicsImageRenderer alloc] initWithSize:CGSizeMake(18, 18) format:format];
+    return [renderer imageWithActions:^(UIGraphicsImageRendererContext * _Nonnull context) {
+        UIBezierPath *star = [UIBezierPath bezierPath];
+        CGPoint center = CGPointMake(9, 9);
+        for (NSInteger index = 0; index < 8; index++) {
+            CGFloat angle = -M_PI_2 + (M_PI / 4.0 * index);
+            CGFloat radius = index % 2 == 0 ? 8.0 : 2.8;
+            CGPoint point = CGPointMake(center.x + cos(angle) * radius,
+                                        center.y + sin(angle) * radius);
+            if (index == 0) {
+                [star moveToPoint:point];
+            } else {
+                [star addLineToPoint:point];
+            }
+        }
+        [star closePath];
+        [[UIColor whiteColor] setFill];
+        [star fill];
+    }];
+}
 
 @interface GradientView : UIView
 
@@ -113,6 +139,7 @@
 
 @property (nonatomic, strong) NSArray<NSArray<SymbolTileView *> *> *tiles;
 - (void)applyReels:(NSArray<NSArray<SlotSymbol *> *> *)reels spinning:(BOOL)spinning;
+- (void)celebrate;
 
 @end
 
@@ -173,6 +200,36 @@
     }
 }
 
+- (void)celebrate {
+    BOOL reduceMotion = UIAccessibilityIsReduceMotionEnabled();
+    UIColor *highlight = [UIColor colorWithRed:1.0 green:0.86 blue:0.30 alpha:1.0];
+    NSInteger index = 0;
+
+    for (NSArray<SymbolTileView *> *rowTiles in self.tiles) {
+        for (SymbolTileView *tile in rowTiles) {
+            NSTimeInterval delay = reduceMotion ? 0 : index * 0.018;
+            [UIView animateWithDuration:reduceMotion ? 0.18 : 0.30
+                                  delay:delay
+                                options:UIViewAnimationOptionBeginFromCurrentState | UIViewAnimationOptionCurveEaseOut
+                             animations:^{
+                tile.transform = CGAffineTransformMakeScale(reduceMotion ? 1.02 : 1.08,
+                                                             reduceMotion ? 1.02 : 1.08);
+                tile.layer.borderWidth = 2.0;
+                tile.layer.borderColor = highlight.CGColor;
+            } completion:^(BOOL finished) {
+                [UIView animateWithDuration:reduceMotion ? 0.16 : 0.34
+                                      delay:0
+                                    options:UIViewAnimationOptionBeginFromCurrentState | UIViewAnimationOptionCurveEaseIn
+                                 animations:^{
+                    tile.transform = CGAffineTransformIdentity;
+                    tile.layer.borderWidth = 0;
+                } completion:nil];
+            }];
+            index += 1;
+        }
+    }
+}
+
 @end
 
 @interface SlotMachineViewController ()
@@ -193,6 +250,7 @@
 @property (nonatomic, strong) UIButton *maxButton;
 @property (nonatomic, strong) UIButton *resetButton;
 @property (nonatomic, strong) UIButton *spinButton;
+@property (nonatomic, strong) UIView *celebrationOverlay;
 
 @end
 
@@ -499,6 +557,135 @@
     }];
 }
 
+- (void)showWinCelebrationIfNeeded {
+    if (self.game.lastWin <= 0 || self.view.window == nil) {
+        return;
+    }
+
+    [self.celebrationOverlay removeFromSuperview];
+    self.celebrationOverlay = nil;
+
+    BOOL isGrand = [self.game.message isEqualToString:@"Grand jackpot"];
+    BOOL isMega = [self.game.message isEqualToString:@"Mega win"];
+    BOOL reduceMotion = UIAccessibilityIsReduceMotionEnabled();
+    UIColor *accent = isGrand
+        ? [UIColor colorWithRed:1.0 green:0.78 blue:0.20 alpha:1.0]
+        : (isMega
+           ? [UIColor colorWithRed:0.70 green:0.48 blue:1.0 alpha:1.0]
+           : [UIColor colorWithRed:0.30 green:0.92 blue:1.0 alpha:1.0]);
+
+    UIView *overlay = [[UIView alloc] initWithFrame:self.view.bounds];
+    overlay.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+    overlay.userInteractionEnabled = NO;
+    overlay.backgroundColor = [UIColor colorWithWhite:0 alpha:isGrand ? 0.22 : 0.12];
+    overlay.alpha = 0;
+    self.celebrationOverlay = overlay;
+    [self.view addSubview:overlay];
+
+    UIView *halo = [[UIView alloc] initWithFrame:CGRectMake(0, 0, isGrand ? 210 : 170, isGrand ? 210 : 170)];
+    halo.center = CGPointMake(CGRectGetMidX(overlay.bounds), CGRectGetMidY(overlay.bounds) - 44);
+    halo.backgroundColor = [accent colorWithAlphaComponent:0.12];
+    halo.layer.cornerRadius = halo.bounds.size.width / 2.0;
+    halo.layer.borderWidth = isGrand ? 3.0 : 2.0;
+    halo.layer.borderColor = [accent colorWithAlphaComponent:0.72].CGColor;
+    halo.alpha = 0;
+    [overlay addSubview:halo];
+
+    UILabel *title = [self label:self.game.message.uppercaseString
+                             size:isGrand ? 36 : 30
+                           weight:UIFontWeightBlack
+                            color:accent];
+    title.textAlignment = NSTextAlignmentCenter;
+    title.frame = CGRectMake(20, CGRectGetMaxY(halo.frame) + 22, overlay.bounds.size.width - 40, 48);
+    title.transform = CGAffineTransformMakeScale(0.72, 0.72);
+    [overlay addSubview:title];
+
+    UILabel *amount = [self label:[NSString stringWithFormat:@"+%@", [self shortCredits:self.game.lastWin]]
+                             size:isGrand ? 28 : 23
+                           weight:UIFontWeightBold
+                            color:UIColor.whiteColor];
+    amount.textAlignment = NSTextAlignmentCenter;
+    amount.frame = CGRectMake(20, CGRectGetMaxY(title.frame) + 3, overlay.bounds.size.width - 40, 36);
+    amount.transform = CGAffineTransformMakeScale(0.72, 0.72);
+    [overlay addSubview:amount];
+
+    UIImage *particleImage = CelebrationParticleImage();
+    CAEmitterLayer *emitter = [CAEmitterLayer layer];
+    emitter.emitterPosition = CGPointMake(CGRectGetMidX(overlay.bounds), CGRectGetMidY(overlay.bounds) - 44);
+    emitter.emitterShape = kCAEmitterLayerPoint;
+    emitter.renderMode = kCAEmitterLayerAdditive;
+
+    CAEmitterCell *particle = [CAEmitterCell emitterCell];
+    particle.contents = (id)particleImage.CGImage;
+    particle.birthRate = isGrand ? 52 : (isMega ? 36 : 24);
+    particle.lifetime = isGrand ? 1.55 : 1.15;
+    particle.velocity = isGrand ? 190 : 150;
+    particle.velocityRange = isGrand ? 110 : 85;
+    particle.emissionRange = (CGFloat)(M_PI * 2.0);
+    particle.spinRange = (CGFloat)M_PI;
+    particle.scale = isGrand ? 0.14 : 0.10;
+    particle.scaleRange = 0.06;
+    particle.alphaSpeed = -0.72;
+    particle.color = accent.CGColor;
+    emitter.emitterCells = @[particle];
+    [overlay.layer addSublayer:emitter];
+
+    [self.slotView celebrate];
+
+    if (reduceMotion) {
+        overlay.alpha = 1;
+        halo.alpha = 1;
+        halo.transform = CGAffineTransformIdentity;
+        title.transform = CGAffineTransformIdentity;
+        amount.transform = CGAffineTransformIdentity;
+    } else {
+        halo.transform = CGAffineTransformMakeScale(0.36, 0.36);
+        [UIView animateKeyframesWithDuration:isGrand ? 0.72 : 0.52
+                                       delay:0
+                                     options:UIViewKeyframeAnimationOptionCalculationModeCubic | UIViewAnimationOptionBeginFromCurrentState
+                                  animations:^{
+            overlay.alpha = 1;
+            halo.alpha = 1;
+            halo.transform = CGAffineTransformIdentity;
+            title.transform = CGAffineTransformIdentity;
+            amount.transform = CGAffineTransformIdentity;
+        } completion:nil];
+    }
+
+    [UIView animateWithDuration:0.18 animations:^{
+        self.messageLabel.transform = CGAffineTransformMakeScale(1.12, 1.12);
+        self.winValueLabel.transform = CGAffineTransformMakeScale(1.10, 1.10);
+    } completion:^(BOOL finished) {
+        [UIView animateWithDuration:0.28 animations:^{
+            self.messageLabel.transform = CGAffineTransformIdentity;
+            self.winValueLabel.transform = CGAffineTransformIdentity;
+        }];
+    }];
+
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.30 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        emitter.birthRate = 0;
+    });
+
+    NSTimeInterval duration = isGrand ? 1.75 : 1.20;
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(duration * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        [UIView animateWithDuration:0.24 animations:^{
+            overlay.alpha = 0;
+        } completion:^(BOOL finished) {
+            [overlay removeFromSuperview];
+            if (self.celebrationOverlay == overlay) {
+                self.celebrationOverlay = nil;
+            }
+        }];
+    });
+}
+
+- (void)clearWinCelebration {
+    [self.celebrationOverlay removeFromSuperview];
+    self.celebrationOverlay = nil;
+    self.messageLabel.transform = CGAffineTransformIdentity;
+    self.winValueLabel.transform = CGAffineTransformIdentity;
+}
+
 - (void)increaseBet {
     [self.game increaseBet];
     [self refreshUI];
@@ -515,6 +702,7 @@
 }
 
 - (void)resetGame {
+    [self clearWinCelebration];
     [self.game resetSession];
     [self refreshUI];
 }
@@ -524,6 +712,7 @@
         [self refreshUI];
     } completion:^{
         [self refreshUI];
+        [self showWinCelebrationIfNeeded];
     }];
     [self refreshUI];
 }

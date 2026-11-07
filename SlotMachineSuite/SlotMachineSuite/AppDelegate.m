@@ -1,15 +1,11 @@
 #import "AppDelegate.h"
 #import "AttributionManager.h"
-#import "SlotMachineViewController.h"
 
 @implementation AppDelegate
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
-    [[AttributionManager sharedManager] configure];
-
-    self.window = [[UIWindow alloc] initWithFrame:UIScreen.mainScreen.bounds];
-    self.window.rootViewController = [[SlotMachineViewController alloc] init];
-    [self.window makeKeyAndVisible];
+    // Window creation belongs to SceneDelegate when scene-based lifecycle is enabled.
+    // Keep app-level startup lightweight so scene connection is not delayed.
     return YES;
 }
 

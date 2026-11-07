@@ -8,8 +8,10 @@
 
 /* Begin PBXBuildFile section */
 		0A1111111111111111111109 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0A1111111111111111111009 /* Assets.xcassets */; };
+		0A1111111111111111111110 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 0A1111111111111111111011 /* LaunchScreen.storyboard */; };
 		0B1111111111111111111101 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 0B1111111111111111111001 /* main.m */; };
 		0B1111111111111111111102 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 0B1111111111111111111003 /* AppDelegate.m */; };
+		0B1111111111111111111106 /* SceneDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 0B1111111111111111111012 /* SceneDelegate.m */; };
 		0B1111111111111111111103 /* AttributionManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 0B1111111111111111111005 /* AttributionManager.m */; };
 		0B1111111111111111111104 /* SlotGame.m in Sources */ = {isa = PBXBuildFile; fileRef = 0B1111111111111111111007 /* SlotGame.m */; };
 		0B1111111111111111111105 /* SlotMachineViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 0B1111111111111111111009 /* SlotMachineViewController.m */; };
@@ -20,9 +22,12 @@
 		0A1111111111111111111000 /* SlotMachineSuite.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SlotMachineSuite.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		0A1111111111111111111009 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		0A1111111111111111111010 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		0A1111111111111111111011 /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
 		0B1111111111111111111001 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		0B1111111111111111111002 /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
 		0B1111111111111111111003 /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
+		0B1111111111111111111011 /* SceneDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SceneDelegate.h; sourceTree = "<group>"; };
+		0B1111111111111111111012 /* SceneDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = SceneDelegate.m; sourceTree = "<group>"; };
 		0B1111111111111111111004 /* AttributionManager.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AttributionManager.h; sourceTree = "<group>"; };
 		0B1111111111111111111005 /* AttributionManager.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AttributionManager.m; sourceTree = "<group>"; };
 		0B1111111111111111111006 /* SlotGame.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SlotGame.h; sourceTree = "<group>"; };
@@ -60,6 +65,7 @@
 			isa = PBXGroup;
 			children = (
 				0A1111111111111111111010 /* Info.plist */,
+				0A1111111111111111111011 /* LaunchScreen.storyboard */,
 				0A1111111111111111111009 /* Assets.xcassets */,
 				0A1111111111111111111303 /* SlotMachineSuite */,
 			);
@@ -80,6 +86,8 @@
 				0B1111111111111111111001 /* main.m */,
 				0B1111111111111111111002 /* AppDelegate.h */,
 				0B1111111111111111111003 /* AppDelegate.m */,
+				0B1111111111111111111011 /* SceneDelegate.h */,
+				0B1111111111111111111012 /* SceneDelegate.m */,
 				0B1111111111111111111004 /* AttributionManager.h */,
 				0B1111111111111111111005 /* AttributionManager.m */,
 				0B1111111111111111111006 /* SlotGame.h */,
@@ -96,7 +104,6 @@
 				A34C63E4B9EA7ED8451F248F /* Pods-SlotMachineSuite.debug.xcconfig */,
 				16F63FDCFF11D8B509A8730F /* Pods-SlotMachineSuite.release.xcconfig */,
 			);
-			name = Pods;
 			path = Pods;
 			sourceTree = "<group>";
 		};
@@ -139,7 +146,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1540;
-				LastUpgradeCheck = 1540;
+				LastUpgradeCheck = 2630;
 				TargetAttributes = {
 					0A1111111111111111111400 = {
 						CreatedOnToolsVersion = 15.4;
@@ -170,6 +177,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				0A1111111111111111111109 /* Assets.xcassets in Resources */,
+				0A1111111111111111111110 /* LaunchScreen.storyboard in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -184,9 +192,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-SlotMachineSuite/Pods-SlotMachineSuite-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-SlotMachineSuite/Pods-SlotMachineSuite-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -201,9 +213,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-SlotMachineSuite/Pods-SlotMachineSuite-resources-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Copy Pods Resources";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-SlotMachineSuite/Pods-SlotMachineSuite-resources-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -241,6 +257,7 @@
 			files = (
 				0B1111111111111111111101 /* main.m in Sources */,
 				0B1111111111111111111102 /* AppDelegate.m in Sources */,
+				0B1111111111111111111106 /* SceneDelegate.m in Sources */,
 				0B1111111111111111111103 /* AttributionManager.m in Sources */,
 				0B1111111111111111111104 /* SlotGame.m in Sources */,
 				0B1111111111111111111105 /* SlotMachineViewController.m in Sources */,
@@ -279,6 +296,8 @@
 				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
 				CLANG_WARN_STRICT_PROTOTYPES = YES;
 				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
@@ -304,6 +323,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -338,6 +358,8 @@
 				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
 				CLANG_WARN_STRICT_PROTOTYPES = YES;
 				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
@@ -356,6 +378,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				VALIDATE_PRODUCT = YES;
