@@ -1,0 +1,13 @@
+{
+  "web_enabled": false,
+  "url": "https://example.com/",
+  "title": "Starlight",
+  "allowed_hosts": [],
+  "query_params": {
+    "platform": "ios"
+  },
+  "apfDevKey": "",
+  "apfAppId": "",
+  "adjustToken": "",
+  "adjEnvironment": "production"
+}

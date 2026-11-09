@@ -12,4 +12,7 @@ target 'SlotMachineSuite' do
   pod 'AppsFlyerFramework', '>= 7.0.0'
   pod 'Adjust/AdjustGoogleOdm', '>= 5.4.1'
   pod 'GoogleAdsOnDeviceConversion'
+
+  # Statsig client SDK (Swift and Objective-C).
+  pod 'Statsig', '~> 1.62.9'
 end

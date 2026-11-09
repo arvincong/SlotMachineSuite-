@@ -1,12 +1,23 @@
 #import "AppDelegate.h"
 #import "AttributionManager.h"
+#import "SceneDelegate.h"
 
 @implementation AppDelegate
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
-    // Window creation belongs to SceneDelegate when scene-based lifecycle is enabled.
-    // Keep app-level startup lightweight so scene connection is not delayed.
+    // Register the SDK's session-ready listener before scenes become active.
+    // SDKs without credentials remain disabled and do no startup work.
+    [[AttributionManager sharedManager] configureWithLaunchOptions:launchOptions];
     return YES;
+}
+
+- (UISceneConfiguration *)application:(UIApplication *)application
+configurationForConnectingSceneSession:(UISceneSession *)connectingSceneSession
+                             options:(UISceneConnectionOptions *)options {
+    UISceneConfiguration *configuration = [UISceneConfiguration configurationWithName:@"Default Configuration"
+                                                                        sessionRole:connectingSceneSession.role];
+    configuration.delegateClass = SceneDelegate.class;
+    return configuration;
 }
 
 - (BOOL)application:(UIApplication *)app openURL:(NSURL *)url options:(NSDictionary<UIApplicationOpenURLOptionsKey, id> *)options {

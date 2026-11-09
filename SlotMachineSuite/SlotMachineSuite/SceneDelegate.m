@@ -1,6 +1,6 @@
 #import "SceneDelegate.h"
 #import "AttributionManager.h"
-#import "SlotMachineViewController.h"
+#import "SMSLaunchViewController.h"
 
 @implementation SceneDelegate
 
@@ -13,14 +13,17 @@ willConnectToSession:(UISceneSession *)session
 
     UIWindowScene *windowScene = (UIWindowScene *)scene;
     self.window = [[UIWindow alloc] initWithWindowScene:windowScene];
-    self.window.rootViewController = [[SlotMachineViewController alloc] init];
+    SMSLaunchViewController *launch = [SMSLaunchViewController new];
+    UINavigationController *navigation = [[UINavigationController alloc] initWithRootViewController:launch];
+    navigation.navigationBarHidden = YES;
+    self.window.rootViewController = navigation;
     [self.window makeKeyAndVisible];
 
-    // Keep optional attribution setup out of the scene connection path so the
-    // first frame can be presented without waiting for third-party SDKs.
-    dispatch_async(dispatch_get_main_queue(), ^{
-        [[AttributionManager sharedManager] configure];
-    });
+    // Cold-launch links arrive in connectionOptions, not the warm-link callbacks.
+    [self scene:scene openURLContexts:connectionOptions.URLContexts];
+    for (NSUserActivity *userActivity in connectionOptions.userActivities) {
+        [self scene:scene continueUserActivity:userActivity];
+    }
 }
 
 - (void)scene:(UIScene *)scene

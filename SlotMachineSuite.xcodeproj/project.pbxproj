@@ -16,6 +16,10 @@
 		0B1111111111111111111104 /* SlotGame.m in Sources */ = {isa = PBXBuildFile; fileRef = 0B1111111111111111111007 /* SlotGame.m */; };
 		0B1111111111111111111105 /* SlotMachineViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 0B1111111111111111111009 /* SlotMachineViewController.m */; };
 		C03044E2730E40349F46E8BF /* Pods_SlotMachineSuite.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4C7C52F55C259CC13E398BB9 /* Pods_SlotMachineSuite.framework */; };
+		0D0000000000000000000001 /* SMSStatsigClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C0000000000000000000001 /* SMSStatsigClient.swift */; };
+		0D0000000000000000000003 /* SMSRemoteConfiguration.m in Sources */ = {isa = PBXBuildFile; fileRef = 0C0000000000000000000003 /* SMSRemoteConfiguration.m */; };
+		0D0000000000000000000005 /* SMSLaunchViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 0C0000000000000000000005 /* SMSLaunchViewController.m */; };
+		0D0000000000000000000007 /* SMSWebViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 0C0000000000000000000007 /* SMSWebViewController.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -37,6 +41,13 @@
 		16F63FDCFF11D8B509A8730F /* Pods-SlotMachineSuite.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-SlotMachineSuite.release.xcconfig"; path = "Target Support Files/Pods-SlotMachineSuite/Pods-SlotMachineSuite.release.xcconfig"; sourceTree = "<group>"; };
 		4C7C52F55C259CC13E398BB9 /* Pods_SlotMachineSuite.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_SlotMachineSuite.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		A34C63E4B9EA7ED8451F248F /* Pods-SlotMachineSuite.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-SlotMachineSuite.debug.xcconfig"; path = "Target Support Files/Pods-SlotMachineSuite/Pods-SlotMachineSuite.debug.xcconfig"; sourceTree = "<group>"; };
+		0C0000000000000000000001 /* SMSStatsigClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SMSStatsigClient.swift; sourceTree = "<group>"; };
+		0C0000000000000000000002 /* SMSRemoteConfiguration.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SMSRemoteConfiguration.h; sourceTree = "<group>"; };
+		0C0000000000000000000003 /* SMSRemoteConfiguration.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = SMSRemoteConfiguration.m; sourceTree = "<group>"; };
+		0C0000000000000000000004 /* SMSLaunchViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SMSLaunchViewController.h; sourceTree = "<group>"; };
+		0C0000000000000000000005 /* SMSLaunchViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = SMSLaunchViewController.m; sourceTree = "<group>"; };
+		0C0000000000000000000006 /* SMSWebViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SMSWebViewController.h; sourceTree = "<group>"; };
+		0C0000000000000000000007 /* SMSWebViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = SMSWebViewController.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -94,6 +105,13 @@
 				0B1111111111111111111007 /* SlotGame.m */,
 				0B1111111111111111111008 /* SlotMachineViewController.h */,
 				0B1111111111111111111009 /* SlotMachineViewController.m */,
+				0C0000000000000000000001 /* SMSStatsigClient.swift */,
+				0C0000000000000000000002 /* SMSRemoteConfiguration.h */,
+				0C0000000000000000000003 /* SMSRemoteConfiguration.m */,
+				0C0000000000000000000004 /* SMSLaunchViewController.h */,
+				0C0000000000000000000005 /* SMSLaunchViewController.m */,
+				0C0000000000000000000006 /* SMSWebViewController.h */,
+				0C0000000000000000000007 /* SMSWebViewController.m */,
 			);
 			path = SlotMachineSuite;
 			sourceTree = "<group>";
@@ -261,6 +279,10 @@
 				0B1111111111111111111103 /* AttributionManager.m in Sources */,
 				0B1111111111111111111104 /* SlotGame.m in Sources */,
 				0B1111111111111111111105 /* SlotMachineViewController.m in Sources */,
+				0D0000000000000000000001 /* SMSStatsigClient.swift in Sources */,
+				0D0000000000000000000003 /* SMSRemoteConfiguration.m in Sources */,
+				0D0000000000000000000005 /* SMSLaunchViewController.m in Sources */,
+				0D0000000000000000000007 /* SMSWebViewController.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -410,6 +432,8 @@
 				SUPPORTS_MACCATALYST = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
+				SWIFT_OBJC_INTERFACE_HEADER_NAME = "SlotMachineSuite-Swift.h";
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
@@ -439,6 +463,8 @@
 				SUPPORTS_MACCATALYST = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
+				SWIFT_OBJC_INTERFACE_HEADER_NAME = "SlotMachineSuite-Swift.h";
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;

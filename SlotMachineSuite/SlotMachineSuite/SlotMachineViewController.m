@@ -3,28 +3,108 @@
 #import <QuartzCore/QuartzCore.h>
 #import <math.h>
 
-static UIImage *CelebrationParticleImage(void) {
-    UIGraphicsImageRendererFormat *format = [UIGraphicsImageRendererFormat defaultFormat];
-    format.scale = 2.0;
-    UIGraphicsImageRenderer *renderer = [[UIGraphicsImageRenderer alloc] initWithSize:CGSizeMake(18, 18) format:format];
-    return [renderer imageWithActions:^(UIGraphicsImageRendererContext * _Nonnull context) {
-        UIBezierPath *star = [UIBezierPath bezierPath];
-        CGPoint center = CGPointMake(9, 9);
-        for (NSInteger index = 0; index < 8; index++) {
-            CGFloat angle = -M_PI_2 + (M_PI / 4.0 * index);
-            CGFloat radius = index % 2 == 0 ? 8.0 : 2.8;
-            CGPoint point = CGPointMake(center.x + cos(angle) * radius,
-                                        center.y + sin(angle) * radius);
-            if (index == 0) {
-                [star moveToPoint:point];
-            } else {
-                [star addLineToPoint:point];
-            }
-        }
-        [star closePath];
-        [[UIColor whiteColor] setFill];
-        [star fill];
-    }];
+// One finite launch and burst, rendered entirely by Core Animation. No timers
+// or repeating emitters survive removal of the celebration overlay.
+static void AddWinFirework(CALayer *container, CGPoint origin, UIColor *color,
+                          NSTimeInterval delay, CGFloat radius, NSInteger rayCount) {
+    CFTimeInterval start = [container convertTime:CACurrentMediaTime() fromLayer:nil] + delay;
+    NSTimeInterval ascent = 0.32;
+
+    CAShapeLayer *rocket = [CAShapeLayer layer];
+    UIBezierPath *launchPath = [UIBezierPath bezierPath];
+    [launchPath moveToPoint:CGPointMake(origin.x - 20, origin.y + radius * 1.4)];
+    [launchPath addQuadCurveToPoint:origin
+                     controlPoint:CGPointMake(origin.x + 12, origin.y + radius * 0.6)];
+    rocket.path = launchPath.CGPath;
+    rocket.fillColor = UIColor.clearColor.CGColor;
+    rocket.strokeColor = color.CGColor;
+    rocket.lineWidth = 2.5;
+    rocket.lineCap = kCALineCapRound;
+    rocket.opacity = 0;
+    [container addSublayer:rocket];
+
+    CABasicAnimation *launchEnd = [CABasicAnimation animationWithKeyPath:@"strokeEnd"];
+    launchEnd.fromValue = @0;
+    launchEnd.toValue = @1;
+    launchEnd.duration = ascent;
+    CABasicAnimation *launchStart = [CABasicAnimation animationWithKeyPath:@"strokeStart"];
+    launchStart.fromValue = @0;
+    launchStart.toValue = @1;
+    launchStart.beginTime = 0.08;
+    launchStart.duration = ascent - 0.08;
+    CABasicAnimation *launchOpacity = [CABasicAnimation animationWithKeyPath:@"opacity"];
+    launchOpacity.fromValue = @1;
+    launchOpacity.toValue = @0.5;
+    launchOpacity.duration = ascent;
+    CAAnimationGroup *launch = [CAAnimationGroup animation];
+    launch.animations = @[launchEnd, launchStart, launchOpacity];
+    launch.beginTime = start;
+    launch.duration = ascent;
+    [rocket addAnimation:launch forKey:@"launch"];
+
+    for (NSInteger index = 0; index < rayCount; index++) {
+        CGFloat angle = (2.0 * M_PI * index / rayCount) + (arc4random_uniform(100) / 500.0);
+        CGFloat distance = radius * (0.65 + arc4random_uniform(36) / 100.0);
+        CGFloat dx = cos(angle) * distance;
+        CGFloat dy = sin(angle) * distance;
+        UIBezierPath *path = [UIBezierPath bezierPath];
+        [path moveToPoint:origin];
+        [path addQuadCurveToPoint:CGPointMake(origin.x + dx, origin.y + dy + radius * 0.48)
+                    controlPoint:CGPointMake(origin.x + dx * 0.65, origin.y + dy * 0.65)];
+
+        CAShapeLayer *ray = [CAShapeLayer layer];
+        ray.path = path.CGPath;
+        ray.fillColor = UIColor.clearColor.CGColor;
+        ray.strokeColor = (index % 4 == 0 ? UIColor.whiteColor : color).CGColor;
+        ray.lineWidth = index % 3 == 0 ? 2.4 : 1.5;
+        ray.lineCap = kCALineCapRound;
+        ray.opacity = 0;
+        [container addSublayer:ray];
+
+        CABasicAnimation *head = [CABasicAnimation animationWithKeyPath:@"strokeEnd"];
+        head.fromValue = @0;
+        head.toValue = @1;
+        head.duration = 0.85;
+        head.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseOut];
+        head.fillMode = kCAFillModeForwards;
+        head.removedOnCompletion = NO;
+        CABasicAnimation *tail = [CABasicAnimation animationWithKeyPath:@"strokeStart"];
+        tail.fromValue = @0;
+        tail.toValue = @1;
+        tail.beginTime = 0.12;
+        tail.duration = 1.03;
+        CAKeyframeAnimation *fade = [CAKeyframeAnimation animationWithKeyPath:@"opacity"];
+        fade.values = @[@1, @0.9, @0];
+        fade.keyTimes = @[@0, @0.4, @1];
+        fade.duration = 1.15;
+        CAAnimationGroup *burst = [CAAnimationGroup animation];
+        burst.animations = @[head, tail, fade];
+        burst.beginTime = start + ascent;
+        burst.duration = 1.15;
+        [ray addAnimation:burst forKey:@"sparkTrail"];
+    }
+
+    CAShapeLayer *ring = [CAShapeLayer layer];
+    ring.path = [UIBezierPath bezierPathWithOvalInRect:CGRectMake(-18, -18, 36, 36)].CGPath;
+    ring.position = origin;
+    ring.fillColor = UIColor.clearColor.CGColor;
+    ring.strokeColor = color.CGColor;
+    ring.lineWidth = 1.5;
+    ring.opacity = 0;
+    [container addSublayer:ring];
+    CABasicAnimation *expand = [CABasicAnimation animationWithKeyPath:@"transform.scale"];
+    expand.fromValue = @0.3;
+    expand.toValue = @3;
+    expand.duration = 0.55;
+    CABasicAnimation *fade = [CABasicAnimation animationWithKeyPath:@"opacity"];
+    fade.fromValue = @0.8;
+    fade.toValue = @0;
+    fade.duration = 0.55;
+    CAAnimationGroup *wave = [CAAnimationGroup animation];
+    wave.animations = @[expand, fade];
+    wave.beginTime = start + ascent;
+    wave.duration = 0.55;
+    [ring addAnimation:wave forKey:@"burstRing"];
 }
 
 @interface GradientView : UIView
@@ -140,6 +220,7 @@ static UIImage *CelebrationParticleImage(void) {
 @property (nonatomic, strong) NSArray<NSArray<SymbolTileView *> *> *tiles;
 - (void)applyReels:(NSArray<NSArray<SlotSymbol *> *> *)reels spinning:(BOOL)spinning;
 - (void)celebrate;
+- (void)stopCelebrating;
 
 @end
 
@@ -212,11 +293,13 @@ static UIImage *CelebrationParticleImage(void) {
                                   delay:delay
                                 options:UIViewAnimationOptionBeginFromCurrentState | UIViewAnimationOptionCurveEaseOut
                              animations:^{
-                tile.transform = CGAffineTransformMakeScale(reduceMotion ? 1.02 : 1.08,
-                                                             reduceMotion ? 1.02 : 1.08);
+                tile.transform = reduceMotion ? CGAffineTransformIdentity : CGAffineTransformMakeScale(1.08, 1.08);
                 tile.layer.borderWidth = 2.0;
                 tile.layer.borderColor = highlight.CGColor;
             } completion:^(BOOL finished) {
+                if (!finished) {
+                    return;
+                }
                 [UIView animateWithDuration:reduceMotion ? 0.16 : 0.34
                                       delay:0
                                     options:UIViewAnimationOptionBeginFromCurrentState | UIViewAnimationOptionCurveEaseIn
@@ -226,6 +309,16 @@ static UIImage *CelebrationParticleImage(void) {
                 } completion:nil];
             }];
             index += 1;
+        }
+    }
+}
+
+- (void)stopCelebrating {
+    for (NSArray<SymbolTileView *> *row in self.tiles) {
+        for (SymbolTileView *tile in row) {
+            [tile.layer removeAllAnimations];
+            tile.transform = CGAffineTransformIdentity;
+            tile.layer.borderWidth = 0;
         }
     }
 }
@@ -261,6 +354,21 @@ static UIImage *CelebrationParticleImage(void) {
     self.game = [[SlotGame alloc] init];
     [self buildInterface];
     [self refreshUI];
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(applicationDidEnterBackground:)
+                                                 name:UIApplicationDidEnterBackgroundNotification
+                                               object:nil];
+}
+
+- (void)viewWillDisappear:(BOOL)animated {
+    [super viewWillDisappear:animated];
+    [self clearWinCelebration];
+}
+
+- (void)viewWillTransitionToSize:(CGSize)size
+       withTransitionCoordinator:(id<UIViewControllerTransitionCoordinator>)coordinator {
+    [self clearWinCelebration];
+    [super viewWillTransitionToSize:size withTransitionCoordinator:coordinator];
 }
 
 - (void)buildInterface {
@@ -558,12 +666,13 @@ static UIImage *CelebrationParticleImage(void) {
 }
 
 - (void)showWinCelebrationIfNeeded {
-    if (self.game.lastWin <= 0 || self.view.window == nil) {
+    if (self.game.lastWin <= 0 || self.view.window == nil ||
+        self.presentedViewController != nil ||
+        UIApplication.sharedApplication.applicationState != UIApplicationStateActive) {
         return;
     }
 
-    [self.celebrationOverlay removeFromSuperview];
-    self.celebrationOverlay = nil;
+    [self clearWinCelebration];
 
     BOOL isGrand = [self.game.message isEqualToString:@"Grand jackpot"];
     BOOL isMega = [self.game.message isEqualToString:@"Mega win"];
@@ -609,26 +718,25 @@ static UIImage *CelebrationParticleImage(void) {
     amount.transform = CGAffineTransformMakeScale(0.72, 0.72);
     [overlay addSubview:amount];
 
-    UIImage *particleImage = CelebrationParticleImage();
-    CAEmitterLayer *emitter = [CAEmitterLayer layer];
-    emitter.emitterPosition = CGPointMake(CGRectGetMidX(overlay.bounds), CGRectGetMidY(overlay.bounds) - 44);
-    emitter.emitterShape = kCAEmitterLayerPoint;
-    emitter.renderMode = kCAEmitterLayerAdditive;
-
-    CAEmitterCell *particle = [CAEmitterCell emitterCell];
-    particle.contents = (id)particleImage.CGImage;
-    particle.birthRate = isGrand ? 52 : (isMega ? 36 : 24);
-    particle.lifetime = isGrand ? 1.55 : 1.15;
-    particle.velocity = isGrand ? 190 : 150;
-    particle.velocityRange = isGrand ? 110 : 85;
-    particle.emissionRange = (CGFloat)(M_PI * 2.0);
-    particle.spinRange = (CGFloat)M_PI;
-    particle.scale = isGrand ? 0.14 : 0.10;
-    particle.scaleRange = 0.06;
-    particle.alphaSpeed = -0.72;
-    particle.color = accent.CGColor;
-    emitter.emitterCells = @[particle];
-    [overlay.layer addSublayer:emitter];
+    if (!reduceMotion) {
+        CALayer *fireworks = [CALayer layer];
+        fireworks.frame = overlay.bounds;
+        fireworks.masksToBounds = YES;
+        // Behind the labels; at most three finite bursts (90 shape layers).
+        [overlay.layer insertSublayer:fireworks atIndex:0];
+        CGFloat width = CGRectGetWidth(overlay.bounds);
+        CGFloat top = self.view.safeAreaInsets.top;
+        CGFloat centerY = MAX(top + 90, CGRectGetMinY(halo.frame) + 25);
+        CGFloat radius = MIN(118, width * 0.27);
+        AddWinFirework(fireworks, CGPointMake(width * 0.5, centerY), accent, 0, radius, 28);
+        if (isMega || isGrand) {
+            UIColor *gold = [UIColor colorWithRed:1 green:0.83 blue:0.36 alpha:1];
+            AddWinFirework(fireworks, CGPointMake(width * 0.25, centerY + 50),
+                           gold, 0.30, radius * 0.85, 28);
+            AddWinFirework(fireworks, CGPointMake(width * 0.75, centerY + 25),
+                           isGrand ? gold : accent, 0.58, radius * 0.9, 28);
+        }
+    }
 
     [self.slotView celebrate];
 
@@ -640,10 +748,12 @@ static UIImage *CelebrationParticleImage(void) {
         amount.transform = CGAffineTransformIdentity;
     } else {
         halo.transform = CGAffineTransformMakeScale(0.36, 0.36);
-        [UIView animateKeyframesWithDuration:isGrand ? 0.72 : 0.52
-                                       delay:0
-                                     options:UIViewKeyframeAnimationOptionCalculationModeCubic | UIViewAnimationOptionBeginFromCurrentState
-                                  animations:^{
+        [UIView animateWithDuration:isGrand ? 0.72 : 0.52
+                              delay:0
+             usingSpringWithDamping:0.72
+              initialSpringVelocity:0
+                            options:UIViewAnimationOptionBeginFromCurrentState
+                         animations:^{
             overlay.alpha = 1;
             halo.alpha = 1;
             halo.transform = CGAffineTransformIdentity;
@@ -652,36 +762,57 @@ static UIImage *CelebrationParticleImage(void) {
         } completion:nil];
     }
 
-    [UIView animateWithDuration:0.18 animations:^{
-        self.messageLabel.transform = CGAffineTransformMakeScale(1.12, 1.12);
-        self.winValueLabel.transform = CGAffineTransformMakeScale(1.10, 1.10);
-    } completion:^(BOOL finished) {
-        [UIView animateWithDuration:0.28 animations:^{
-            self.messageLabel.transform = CGAffineTransformIdentity;
-            self.winValueLabel.transform = CGAffineTransformIdentity;
+    if (!reduceMotion) {
+        [UIView animateWithDuration:0.18 animations:^{
+            self.messageLabel.transform = CGAffineTransformMakeScale(1.12, 1.12);
+            self.winValueLabel.transform = CGAffineTransformMakeScale(1.10, 1.10);
+        } completion:^(BOOL finished) {
+            if (!finished || self.celebrationOverlay != overlay) {
+                return;
+            }
+            [UIView animateWithDuration:0.28 animations:^{
+                self.messageLabel.transform = CGAffineTransformIdentity;
+                self.winValueLabel.transform = CGAffineTransformIdentity;
+            }];
         }];
-    }];
+    }
 
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.30 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        emitter.birthRate = 0;
-    });
-
-    NSTimeInterval duration = isGrand ? 1.75 : 1.20;
+    NSTimeInterval duration = reduceMotion ? 1.2 : ((isGrand || isMega) ? 2.25 : 1.7);
+    __weak typeof(self) weakSelf = self;
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(duration * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        typeof(self) strongSelf = weakSelf;
+        if (strongSelf == nil || strongSelf.celebrationOverlay != overlay) {
+            return;
+        }
         [UIView animateWithDuration:0.24 animations:^{
             overlay.alpha = 0;
         } completion:^(BOOL finished) {
             [overlay removeFromSuperview];
-            if (self.celebrationOverlay == overlay) {
-                self.celebrationOverlay = nil;
+            if (strongSelf.celebrationOverlay == overlay) {
+                strongSelf.celebrationOverlay = nil;
             }
         }];
     });
 }
 
+- (void)applicationDidEnterBackground:(NSNotification *)notification {
+    [self clearWinCelebration];
+}
+
 - (void)clearWinCelebration {
-    [self.celebrationOverlay removeFromSuperview];
+    UIView *overlay = self.celebrationOverlay;
     self.celebrationOverlay = nil;
+    [overlay.layer removeAllAnimations];
+    for (CALayer *layer in overlay.layer.sublayers) {
+        [layer removeAllAnimations];
+        for (CALayer *spark in layer.sublayers) {
+            [spark removeAllAnimations];
+        }
+    }
+    [overlay removeFromSuperview];
+    [self.slotView stopCelebrating];
+    [self.messageLabel.layer removeAllAnimations];
+    [self.winValueLabel.layer removeAllAnimations];
     self.messageLabel.transform = CGAffineTransformIdentity;
     self.winValueLabel.transform = CGAffineTransformIdentity;
 }
@@ -708,16 +839,25 @@ static UIImage *CelebrationParticleImage(void) {
 }
 
 - (void)spin {
+    if (self.game.spinning) {
+        return;
+    }
+    [self clearWinCelebration];
+    NSInteger previousSpinCount = self.game.spinCount;
     [self.game beginSpinWithStep:^{
         [self refreshUI];
     } completion:^{
         [self refreshUI];
-        [self showWinCelebrationIfNeeded];
+        // An insufficient-balance completion must not replay the previous win.
+        if (self.game.spinCount > previousSpinCount) {
+            [self showWinCelebrationIfNeeded];
+        }
     }];
     [self refreshUI];
 }
 
 - (void)showPaytable {
+    [self clearWinCelebration];
     UIViewController *controller = [[UIViewController alloc] init];
     controller.view.backgroundColor = [UIColor colorWithRed:0.07 green:0.07 blue:0.15 alpha:1];
     controller.title = @"Paytable";
