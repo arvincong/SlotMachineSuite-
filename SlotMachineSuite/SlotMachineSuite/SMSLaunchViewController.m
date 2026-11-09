@@ -59,7 +59,8 @@
         SMSRemoteConfiguration *config = [SMSRemoteConfiguration configurationWithValues:values];
         [[AttributionManager sharedManager] applyRemoteConfiguration:config.attributionConfiguration];
         // Log outcome only; never dump URLs, SDK keys or query parameters.
-        NSLog(@"[Launch] source=%@ route=%@", source, config.webEnabled ? @"web" : @"native");
+        NSLog(@"[Launch] source=%@ urlSource=%@ route=%@", source, config.routeSource,
+              config.webEnabled ? config.webConfiguration[@"web_type"] : @"native");
         UIViewController *destination = config.webEnabled
             ? [[SMSWebViewController alloc] initWithConfiguration:config.webConfiguration]
             : [SlotMachineViewController new];

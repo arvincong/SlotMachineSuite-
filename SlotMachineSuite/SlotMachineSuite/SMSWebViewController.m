@@ -9,8 +9,8 @@ static NSString * const SMSBridgeName = @"HAminiBridgeIOS";
 static NSString * const SMSDocumentIDKey = @"__smsWebDocumentID";
 static void *SMSCanGoBackContext = &SMSCanGoBackContext;
 
-@interface SMSWeakScriptHandler : NSObject <WKScriptMessageHandler>
-@property (nonatomic, weak) id<WKScriptMessageHandler> target;
+@interface SMSWeakScriptHandler : NSObject <WKScriptMessageHandler, WKScriptMessageHandlerWithReply>
+@property (nonatomic, weak) id<WKScriptMessageHandler, WKScriptMessageHandlerWithReply> target;
 @end
 
 @implementation SMSWeakScriptHandler
@@ -18,9 +18,15 @@ static void *SMSCanGoBackContext = &SMSCanGoBackContext;
      didReceiveScriptMessage:(WKScriptMessage *)message {
     [self.target userContentController:controller didReceiveScriptMessage:message];
 }
+- (void)userContentController:(WKUserContentController *)controller didReceiveScriptMessage:(WKScriptMessage *)message
+                replyHandler:(void (^)(id _Nullable, NSString * _Nullable))replyHandler {
+    id<WKScriptMessageHandler, WKScriptMessageHandlerWithReply> target = self.target;
+    if (target) [target userContentController:controller didReceiveScriptMessage:message replyHandler:replyHandler];
+    else replyHandler(nil, @"WebView closed");
+}
 @end
 
-@interface SMSWebViewController () <WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler>
+@interface SMSWebViewController () <WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler, WKScriptMessageHandlerWithReply>
 @property (nonatomic, copy) NSDictionary<NSString *, id> *configuration;
 @property (nonatomic, copy) NSSet<NSString *> *allowedHosts;
 @property (nonatomic, strong) WKWebView *webView;
@@ -86,7 +92,21 @@ static void *SMSCanGoBackContext = &SMSCanGoBackContext;
     webConfiguration.preferences.javaScriptCanOpenWindowsAutomatically = NO;
     self.scriptHandler = [SMSWeakScriptHandler new];
     self.scriptHandler.target = self;
-    [webConfiguration.userContentController addScriptMessageHandler:self.scriptHandler name:SMSBridgeName];
+    if ([self isCSC]) {
+        for (NSString *name in @[@"winnerNative", @"slotNative"]) {
+            [webConfiguration.userContentController addScriptMessageHandlerWithReply:self.scriptHandler
+                                                                      contentWorld:WKContentWorld.pageWorld name:name];
+        }
+        NSString *bridgeScript =
+            @"(function(){['winnerNative','slotNative'].forEach(function(name){"
+             "window[name]={postMessage:function(value){return window.webkit.messageHandlers[name]"
+             ".postMessage(typeof value==='string'?value:JSON.stringify(value));}};});})();";
+        [webConfiguration.userContentController addUserScript:
+            [[WKUserScript alloc] initWithSource:bridgeScript injectionTime:WKUserScriptInjectionTimeAtDocumentStart
+                               forMainFrameOnly:YES]];
+    } else {
+        [webConfiguration.userContentController addScriptMessageHandler:self.scriptHandler name:SMSBridgeName];
+    }
     // A fresh, read-only identity per main-frame document guards delayed ATT delivery, including reloads.
     NSString *identityScript =
         @"(function(){var v=new Uint32Array(4);crypto.getRandomValues(v);"
@@ -210,6 +230,49 @@ static void *SMSCanGoBackContext = &SMSCanGoBackContext;
 
 #pragma mark - URL construction and policy
 
+- (BOOL)isCSC {
+    return [self.configuration[@"web_type"] isEqualToString:@"csc"];
+}
+
+- (NSDictionary<NSString *, id> *)cscDeviceInfo {
+    NSDictionary *info = NSBundle.mainBundle.infoDictionary;
+    NSDictionary *tracking = [[AttributionManager sharedManager] webQueryParameters];
+    NSString *idfv = tracking[@"idfv"] ?: @"";
+    UIEdgeInsets insets = self.view.safeAreaInsets;
+    BOOL landscape = self.view.bounds.size.width > self.view.bounds.size.height;
+    return @{
+        @"bundleId": NSBundle.mainBundle.bundleIdentifier ?: @"",
+        @"versionCode": info[@"CFBundleVersion"] ?: @"",
+        @"version": info[@"CFBundleVersion"] ?: @"",
+        @"versionName": info[@"CFBundleShortVersionString"] ?: @"",
+        @"device_brand": @"Apple", @"device_model": UIDevice.currentDevice.model,
+        @"platform": @"ios", @"systemVersion": UIDevice.currentDevice.systemVersion,
+        @"language": NSLocale.preferredLanguages.firstObject ?: @"en",
+        @"country_code": [NSLocale.currentLocale objectForKey:NSLocaleCountryCode] ?: @"",
+        @"user_agent": @"Mozilla/5.0", @"orientation": landscape ? @"landscape" : @"portrait",
+        @"liuhai_height": @(insets.top),
+        @"saferect": [NSString stringWithFormat:@"%g,%g,%g,%g", insets.left, insets.top, insets.right, insets.bottom],
+        @"idfa": tracking[@"idfa"] ?: @"", @"idfv": idfv, @"afid": tracking[@"apf"] ?: @"",
+        @"udid": idfv, @"uuid": idfv, @"idfv_keychain": @"", @"adjustid": @"", @"google_adid": @"",
+        @"adjust_installInfo": @{}, @"adjustdata": @{}, @"afdata": @{},
+        @"isAllowedNoti": @NO, @"enableInnerBrow": @NO, @"enableGamePreload": @NO, @"enableHallAlert": @NO,
+        @"gp_referrer": @"", @"scheme": @"", @"langue_record": @[]
+    };
+}
+
+- (NSDictionary<NSString *, NSString *> *)nativeQueryParameters {
+    if (![self isCSC]) return [[AttributionManager sharedManager] webQueryParameters];
+    NSMutableDictionary *parameters = [NSMutableDictionary dictionary];
+    [[self cscDeviceInfo] enumerateKeysAndObjectsUsingBlock:^(NSString *key, id value, BOOL *stop) {
+        if ([value isKindOfClass:NSString.class]) parameters[key] = value;
+        else {
+            NSData *json = [NSJSONSerialization dataWithJSONObject:value options:NSJSONWritingFragmentsAllowed error:nil];
+            if (json) parameters[key] = [[NSString alloc] initWithData:json encoding:NSUTF8StringEncoding];
+        }
+    }];
+    return parameters;
+}
+
 - (BOOL)isAllowedWebURL:(NSURL *)url {
     return [url.scheme.lowercaseString isEqualToString:@"https"] &&
            url.host.length > 0 && [self.allowedHosts containsObject:url.host.lowercaseString] &&
@@ -232,10 +295,12 @@ static void *SMSCanGoBackContext = &SMSCanGoBackContext;
     NSURLComponents *components = [NSURLComponents componentsWithString:self.configuration[@"url"]];
     if (![self isAllowedWebURL:components.URL]) return nil;
     NSMutableDictionary<NSString *, NSString *> *parameters = [self.configuration[@"query_params"] mutableCopy];
-    NSDictionary<NSString *, NSString *> *native = [[AttributionManager sharedManager] webQueryParameters];
-    NSSet *trackingKeys = [NSSet setWithArray:@[@"idfa", @"idfv", @"apf"]];
-    NSSet *nativeKeys = [NSSet setWithArray:@[@"pkg", @"channel", @"jsb", @"supportVersion", @"supportShowAtt",
-                                            @"idfa", @"idfv", @"apf"]];
+    NSDictionary<NSString *, NSString *> *native = [self nativeQueryParameters];
+    NSSet *trackingKeys = [NSSet setWithArray:@[@"idfa", @"idfv", @"apf", @"afid", @"udid", @"uuid"]];
+    NSMutableSet *nativeKeys = [NSMutableSet setWithArray:@[@"pkg", @"channel", @"jsb", @"supportVersion", @"supportShowAtt",
+                                                         @"idfa", @"idfv", @"apf", @"afid", @"udid", @"uuid",
+                                                         @"idfv_keychain", @"adjustid", @"google_adid"]];
+    [nativeKeys addObjectsFromArray:native.allKeys];
     // Native/reserved fields can only come from the adapter, never from remote configuration.
     [parameters removeObjectsForKeys:nativeKeys.allObjects];
     BOOL authorized = [self isTrackingAuthorized];
@@ -245,7 +310,7 @@ static void *SMSCanGoBackContext = &SMSCanGoBackContext;
             parameters[key] = value;
         }
     }];
-    parameters[@"jsb"] = SMSBridgeName;
+    if (![self isCSC]) parameters[@"jsb"] = SMSBridgeName;
     NSMutableArray<NSURLQueryItem *> *items = [NSMutableArray array];
     for (NSURLQueryItem *item in components.queryItems) {
         if (![nativeKeys containsObject:item.name] && !parameters[item.name]) [items addObject:item];
@@ -481,10 +546,77 @@ static void *SMSCanGoBackContext = &SMSCanGoBackContext;
     }
 }
 
+// CSC uses method/data and Promise replies, independently from the US cmd/data bridge.
+- (void)userContentController:(WKUserContentController *)controller didReceiveScriptMessage:(WKScriptMessage *)message
+                replyHandler:(void (^)(id _Nullable, NSString * _Nullable))replyHandler {
+    if (![self isCSC] || message.webView != self.webView || ![self isAuthorizedFrame:message.frameInfo] ||
+        ![@[@"winnerNative", @"slotNative"] containsObject:message.name]) {
+        replyHandler(nil, @"Untrusted bridge request");
+        return;
+    }
+    id body = message.body;
+    if ([body isKindOfClass:NSString.class]) {
+        NSData *json = [body dataUsingEncoding:NSUTF8StringEncoding];
+        body = [NSJSONSerialization JSONObjectWithData:json options:0 error:nil];
+    }
+    if (![body isKindOfClass:NSDictionary.class]) { replyHandler(nil, @"Expected a JSON object"); return; }
+    id origin = body[@"origin"];
+    if (origin && ![origin isEqual:@""] && ![origin isEqual:@"winner_game"]) {
+        replyHandler(nil, @"Invalid bridge origin"); return;
+    }
+    NSString *method = body[@"method"];
+    id data = body[@"data"];
+    if (![method isKindOfClass:NSString.class]) { replyHandler(nil, @"Missing method"); return; }
+    if ([method isEqualToString:@"cc_init_complete"]) {
+        [self emitCSCCallback:@"returnDeviceInfo" value:[self cscDeviceInfo]];
+    } else if ([method isEqualToString:@"copy_text"]) {
+        if (![data isKindOfClass:NSString.class]) { replyHandler(nil, @"Expected text"); return; }
+        UIPasteboard.generalPasteboard.string = data;
+    } else if ([method isEqualToString:@"open_url"]) {
+        NSURL *url = [data isKindOfClass:NSString.class] ? [NSURL URLWithString:data] : nil;
+        if (![self isHTTPSURL:url]) { replyHandler(nil, @"Expected an HTTPS URL"); return; }
+        [self openExternalURL:url];
+    } else if ([method isEqualToString:@"show_att"]) {
+        [self prepareATTForCurrentDocument];
+    } else if ([method isEqualToString:@"close"] ||
+               ([method isEqualToString:@"openUrlByWebView"] && [data isEqual:@""])) {
+        replyHandler(@{@"status": @"ok"}, nil);
+        [self returnToNative];
+        return;
+    } else {
+        // Do not report a payment/login/push operation as successful without its service.
+        replyHandler(@{@"status": @"unsupported", @"method": method}, nil);
+        [self showNotice:@"当前版本尚未支持网页请求的此项功能。"];
+        return;
+    }
+    replyHandler(@{@"status": @"ok"}, nil);
+}
+
+- (void)emitCSCCallback:(NSString *)method value:(id)value {
+    if (self.tornDown || !self.trustedDocument || ![self isCSC]) return;
+    NSUInteger generation = self.documentGeneration;
+    __weak typeof(self) weakSelf = self;
+    [self.webView evaluateJavaScript:[@"window." stringByAppendingString:SMSDocumentIDKey]
+                  completionHandler:^(id documentID, NSError *error) {
+        SMSWebViewController *self = weakSelf;
+        if (!self || self.tornDown || error || !self.trustedDocument || self.documentGeneration != generation ||
+            ![documentID isKindOfClass:NSString.class] || ![self isAllowedWebURL:self.webView.URL]) return;
+        NSString *script =
+            @"if(location.protocol==='https:' && hosts.indexOf(location.hostname.toLowerCase())!==-1 && "
+             "window.__smsWebDocumentID===documentID && window.NativeToCocos && "
+             "typeof window.NativeToCocos[method]==='function'){window.NativeToCocos[method](value);}";
+        [self.webView callAsyncJavaScript:script
+                               arguments:@{@"hosts": self.allowedHosts.allObjects, @"documentID": documentID,
+                                           @"method": method, @"value": value}
+                                 inFrame:nil inContentWorld:WKContentWorld.pageWorld completionHandler:nil];
+    }];
+}
+
 #pragma mark - ATT, scoped to the requesting document
 
 - (void)prepareATTForCurrentDocument {
-    if (self.attPending || self.attRequestInFlight || self.tornDown) return;
+    if (self.attPending || self.tornDown ||
+        (self.attRequestInFlight && self.attGeneration == self.documentGeneration)) return;
     NSUInteger generation = self.documentGeneration;
     __weak typeof(self) weakSelf = self;
     [self.webView evaluateJavaScript:[@"window." stringByAppendingString:SMSDocumentIDKey]
@@ -492,7 +624,7 @@ static void *SMSCanGoBackContext = &SMSCanGoBackContext;
         SMSWebViewController *self = weakSelf;
         if (!self || self.tornDown || error || self.documentGeneration != generation || !self.trustedDocument ||
             ![self isAllowedWebURL:self.webView.URL] || ![result isKindOfClass:NSString.class] ||
-            self.attPending || self.attRequestInFlight) return;
+            self.attPending || (self.attRequestInFlight && self.attGeneration == generation)) return;
         self.attDocumentID = result;
         self.attGeneration = generation;
         self.attPending = YES;
@@ -525,6 +657,8 @@ static void *SMSCanGoBackContext = &SMSCanGoBackContext;
                     if (!self) return;
                     self.attRequestInFlight = NO;
                     [self emitATTStatus:[self stringForATTStatus:result] generation:generation documentID:documentID];
+                    // A newer document may have queued show_att while this system prompt was open.
+                    [self processPendingATT];
                 });
             }];
         } else {
@@ -552,14 +686,19 @@ static void *SMSCanGoBackContext = &SMSCanGoBackContext;
     if ([status isEqualToString:@"authorized"] && [self isTrackingAuthorized]) {
         idfa = ASIdentifierManager.sharedManager.advertisingIdentifier.UUIDString ?: @"";
     }
-    NSDictionary *detail = @{@"status": status, @"idfa": idfa};
+    NSString *idfv = [[AttributionManager sharedManager] webQueryParameters][@"idfv"] ?: @"";
+    NSDictionary *detail = @{@"status": status, @"idfa": idfa, @"idfv": idfv};
     NSDictionary *arguments = @{@"detail": detail, @"documentID": documentID,
-                                @"hosts": self.allowedHosts.allObjects};
+                                @"hosts": self.allowedHosts.allObjects, @"csc": @([self isCSC])};
     // Frame nil is the main frame. Check again inside that document at execution time to close navigation races.
     NSString *script =
         @"if(location.protocol==='https:' && hosts.indexOf(location.hostname.toLowerCase())!==-1 && "
          "window.__smsWebDocumentID===documentID) {"
-         "window.dispatchEvent(new CustomEvent('ON_ATT_STATUS',{detail:detail}));}";
+         "window.dispatchEvent(new CustomEvent('ON_ATT_STATUS',{detail:detail}));"
+         "if(window.cc && window.cc.director && typeof window.cc.director.emit==='function')"
+         "{window.cc.director.emit('ON_ATT_STATUS',detail);}"
+         "if(csc && window.NativeToCocos && typeof window.NativeToCocos.returnAtt==='function')"
+         "{window.NativeToCocos.returnAtt(detail.idfa);}}";
     if (@available(iOS 14.0, *)) {
         [self.webView callAsyncJavaScript:script arguments:arguments inFrame:nil
                           inContentWorld:WKContentWorld.pageWorld completionHandler:nil];
@@ -642,6 +781,10 @@ static void *SMSCanGoBackContext = &SMSCanGoBackContext;
     }
     _scriptHandler.target = nil;
     [_webView.configuration.userContentController removeScriptMessageHandlerForName:SMSBridgeName];
+    for (NSString *name in @[@"winnerNative", @"slotNative"]) {
+        [_webView.configuration.userContentController removeScriptMessageHandlerForName:name
+                                                                          contentWorld:WKContentWorld.pageWorld];
+    }
     [_webView.configuration.userContentController removeAllUserScripts];
     _webView.navigationDelegate = nil;
     _webView.UIDelegate = nil;

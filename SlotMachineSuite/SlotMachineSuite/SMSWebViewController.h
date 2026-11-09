@@ -3,7 +3,8 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /// ARC container for a validated configuration supplied on the main thread.
-/// Keys: url (HTTPS), allowed_hosts (exact hosts), query_params (string pairs), title (optional).
+/// Keys: project, web_type (csc/us), url (HTTPS), allowed_hosts, query_params, title.
+/// CSC exposes winnerNative/slotNative initialization; US exposes HAminiBridgeIOS.
 /// The router must install this controller in a UINavigationController.
 @interface SMSWebViewController : UIViewController
 

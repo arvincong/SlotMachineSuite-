@@ -31,7 +31,10 @@ final class SMSStatsigClient: NSObject {
             DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
                 self.finish([:], source: "timeout")
             }
-            Statsig.initialize(sdkKey: key, user: nil) { error in
+            // initialize fetches from the network on each new process. On failure the
+            // router uses its own per-project URL cache, rather than stale SDK config.
+            let options = StatsigOptions(initTimeout: 4, disableCurrentVCLogging: true)
+            Statsig.initialize(sdkKey: key, user: nil, options: options) { error in
                 DispatchQueue.main.async {
                     guard self.result == nil else { return }
                     guard error == nil else {

@@ -1,6 +1,9 @@
 {
-  "web_enabled": false,
-  "url": "https://example.com/",
+  "project": "",
+  "us_url": "",
+  "csc_url": "",
+  "good_url": "",
+  "happt_url": "",
   "title": "Starlight",
   "allowed_hosts": [],
   "query_params": {
