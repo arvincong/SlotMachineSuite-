@@ -10,3 +10,4 @@ Pods/
 *.xcuserdata/
 *.xcuserstate
 /.DS_Store
+/SlotMachineSuite.xcodeproj/xcuserdata/arvin.xcuserdatad/xcschemes/xcschememanagement.plist
