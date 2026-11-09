@@ -32,6 +32,14 @@
 	<string></string>
 	<key>AdjustEnvironment</key>
 	<string>production</string>
+	<key>SMSPrivacyPolicyURL</key>
+	<string></string>
+	<key>SMSSupportURL</key>
+	<string></string>
+	<key>SMSSupportEmail</key>
+	<string></string>
+	<key>SMSDeveloperName</key>
+	<string></string>
 	<key>NSUserTrackingUsageDescription</key>
 	<string>This identifier is used to measure advertising performance and improve the app experience.</string>
 	<key>UILaunchStoryboardName</key>

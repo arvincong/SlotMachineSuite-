@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0D0000000000000000000009 /* SMSInformationViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 0C0000000000000000000009 /* SMSInformationViewController.m */; };
 		0D0000000000000000000008 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 0C0000000000000000000008 /* PrivacyInfo.xcprivacy */; };
 		0A1111111111111111111109 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0A1111111111111111111009 /* Assets.xcassets */; };
 		0A1111111111111111111110 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 0A1111111111111111111011 /* LaunchScreen.storyboard */; };
@@ -24,6 +25,9 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		0C0000000000000000000009 /* SMSInformationViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = SMSInformationViewController.m; sourceTree = "<group>"; };
+		0C0000000000000000000010 /* SMSInformationViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SMSInformationViewController.h; sourceTree = "<group>"; };
+		0C0000000000000000000011 /* SMSGameRules.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SMSGameRules.h; sourceTree = "<group>"; };
 		0C0000000000000000000008 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		0A1111111111111111111000 /* SlotMachineSuite.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SlotMachineSuite.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		0A1111111111111111111009 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -106,6 +110,9 @@
 				0B1111111111111111111005 /* AttributionManager.m */,
 				0B1111111111111111111006 /* SlotGame.h */,
 				0B1111111111111111111007 /* SlotGame.m */,
+				0C0000000000000000000009 /* SMSInformationViewController.m */,
+				0C0000000000000000000010 /* SMSInformationViewController.h */,
+				0C0000000000000000000011 /* SMSGameRules.h */,
 				0B1111111111111111111008 /* SlotMachineViewController.h */,
 				0B1111111111111111111009 /* SlotMachineViewController.m */,
 				0C0000000000000000000001 /* SMSStatsigClient.swift */,
@@ -274,6 +281,7 @@
 				0B1111111111111111111106 /* SceneDelegate.m in Sources */,
 				0B1111111111111111111103 /* AttributionManager.m in Sources */,
 				0B1111111111111111111104 /* SlotGame.m in Sources */,
+				0D0000000000000000000009 /* SMSInformationViewController.m in Sources */,
 				0B1111111111111111111105 /* SlotMachineViewController.m in Sources */,
 				0D0000000000000000000001 /* SMSStatsigClient.swift in Sources */,
 				0D0000000000000000000003 /* SMSRemoteConfiguration.m in Sources */,

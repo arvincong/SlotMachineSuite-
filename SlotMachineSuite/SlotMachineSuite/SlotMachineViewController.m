@@ -1,5 +1,6 @@
 #import "SlotMachineViewController.h"
 #import "SlotGame.h"
+#import "SMSInformationViewController.h"
 #import <QuartzCore/QuartzCore.h>
 #import <math.h>
 
@@ -335,14 +336,16 @@ static void AddWinFirework(CALayer *container, CGPoint origin, UIColor *color,
 @property (nonatomic, strong) UILabel *winValueLabel;
 @property (nonatomic, strong) UILabel *spinsValueLabel;
 @property (nonatomic, strong) UILabel *messageLabel;
-@property (nonatomic, strong) UILabel *miniLabel;
-@property (nonatomic, strong) UILabel *majorLabel;
+@property (nonatomic, strong) UILabel *lineCountLabel;
+@property (nonatomic, strong) UILabel *bonusCountLabel;
 @property (nonatomic, strong) UILabel *grandLabel;
 @property (nonatomic, strong) UIButton *minusButton;
 @property (nonatomic, strong) UIButton *plusButton;
 @property (nonatomic, strong) UIButton *maxButton;
 @property (nonatomic, strong) UIButton *resetButton;
 @property (nonatomic, strong) UIButton *spinButton;
+@property (nonatomic, strong) UIButton *settingsButton;
+@property (nonatomic, strong) UIButton *rulesButton;
 @property (nonatomic, strong) UIView *celebrationOverlay;
 
 @end
@@ -429,7 +432,12 @@ static void AddWinFirework(CALayer *container, CGPoint origin, UIColor *color,
     UIView *balanceView = [self metricViewWithTitle:@"BALANCE" valueLabel:&balanceLabel];
     self.balanceValueLabel = balanceLabel;
     [top addArrangedSubview:balanceView];
-    [top addArrangedSubview:[self iconButtonWithSystemName:@"list.bullet.rectangle.portrait.fill" action:@selector(showPaytable)]];
+    self.rulesButton = [self iconButtonWithSystemName:@"list.bullet.rectangle.portrait.fill" action:@selector(showPaytable)];
+    self.rulesButton.accessibilityLabel = @"Rules and payouts";
+    self.settingsButton = [self iconButtonWithSystemName:@"gearshape.fill" action:@selector(showSettings)];
+    self.settingsButton.accessibilityLabel = @"Settings, privacy and support";
+    [top addArrangedSubview:self.rulesButton];
+    [top addArrangedSubview:self.settingsButton];
     [container addArrangedSubview:top];
 
     UILabel *starlight = [self label:@"STARLIGHT" size:22 weight:UIFontWeightBlack color:UIColor.whiteColor];
@@ -451,11 +459,11 @@ static void AddWinFirework(CALayer *container, CGPoint origin, UIColor *color,
     UILabel *miniLabel = nil;
     UILabel *majorLabel = nil;
     UILabel *grandLabel = nil;
-    [strip addArrangedSubview:[self jackpotBadge:@"MINI" tint:[UIColor colorWithRed:0.20 green:0.84 blue:0.38 alpha:1] valueLabel:&miniLabel]];
-    [strip addArrangedSubview:[self jackpotBadge:@"MAJOR" tint:[UIColor colorWithRed:0.13 green:0.64 blue:0.95 alpha:1] valueLabel:&majorLabel]];
-    [strip addArrangedSubview:[self jackpotBadge:@"GRAND" tint:[UIColor colorWithRed:0.98 green:0.24 blue:0.30 alpha:1] valueLabel:&grandLabel]];
-    self.miniLabel = miniLabel;
-    self.majorLabel = majorLabel;
+    [strip addArrangedSubview:[self jackpotBadge:@"PAYLINES" tint:[UIColor colorWithRed:0.20 green:0.84 blue:0.38 alpha:1] valueLabel:&miniLabel]];
+    [strip addArrangedSubview:[self jackpotBadge:@"BONUS" tint:[UIColor colorWithRed:0.13 green:0.64 blue:0.95 alpha:1] valueLabel:&majorLabel]];
+    [strip addArrangedSubview:[self jackpotBadge:@"JACKPOT" tint:[UIColor colorWithRed:0.98 green:0.24 blue:0.30 alpha:1] valueLabel:&grandLabel]];
+    self.lineCountLabel = miniLabel;
+    self.bonusCountLabel = majorLabel;
     self.grandLabel = grandLabel;
     return strip;
 }
@@ -494,6 +502,7 @@ static void AddWinFirework(CALayer *container, CGPoint origin, UIColor *color,
 
     self.messageLabel = [self label:@"" size:18 weight:UIFontWeightBlack color:UIColor.whiteColor];
     self.messageLabel.textAlignment = NSTextAlignmentCenter;
+    self.messageLabel.numberOfLines = 0;
     [stack addArrangedSubview:self.messageLabel];
 
     UIStackView *betRow = [[UIStackView alloc] init];
@@ -513,6 +522,10 @@ static void AddWinFirework(CALayer *container, CGPoint origin, UIColor *color,
     spinRow.axis = UILayoutConstraintAxisHorizontal;
     spinRow.spacing = 12;
     self.resetButton = [self commandButton:@"arrow.counterclockwise" title:nil action:@selector(resetGame)];
+    self.resetButton.accessibilityLabel = @"Reset local game progress";
+    self.minusButton.accessibilityLabel = @"Decrease bet";
+    self.plusButton.accessibilityLabel = @"Increase bet";
+    self.maxButton.accessibilityLabel = @"Set maximum bet";
     self.spinButton = [UIButton buttonWithType:UIButtonTypeSystem];
     self.spinButton.titleLabel.font = [UIFont systemFontOfSize:25 weight:UIFontWeightBlack];
     self.spinButton.tintColor = UIColor.whiteColor;
@@ -523,8 +536,9 @@ static void AddWinFirework(CALayer *container, CGPoint origin, UIColor *color,
     [spinRow addArrangedSubview:self.spinButton];
     [stack addArrangedSubview:spinRow];
 
-    UILabel *footer = [self label:@"Virtual coins only" size:11 weight:UIFontWeightSemibold color:[UIColor colorWithWhite:1 alpha:0.58]];
+    UILabel *footer = [self label:@"Free virtual coins · No cash value or prizes" size:11 weight:UIFontWeightSemibold color:[UIColor colorWithWhite:1 alpha:0.58]];
     footer.textAlignment = NSTextAlignmentCenter;
+    footer.numberOfLines = 0;
     [stack addArrangedSubview:footer];
 
     [NSLayoutConstraint activateConstraints:@[
@@ -532,8 +546,8 @@ static void AddWinFirework(CALayer *container, CGPoint origin, UIColor *color,
         [stack.trailingAnchor constraintEqualToAnchor:panel.trailingAnchor constant:-12],
         [stack.topAnchor constraintEqualToAnchor:panel.topAnchor constant:12],
         [stack.bottomAnchor constraintEqualToAnchor:panel.bottomAnchor constant:-12],
-        [self.minusButton.widthAnchor constraintEqualToConstant:42],
-        [self.plusButton.widthAnchor constraintEqualToConstant:42],
+        [self.minusButton.widthAnchor constraintEqualToConstant:44],
+        [self.plusButton.widthAnchor constraintEqualToConstant:44],
         [self.maxButton.widthAnchor constraintEqualToConstant:58],
         [self.resetButton.widthAnchor constraintEqualToConstant:50],
         [self.spinButton.heightAnchor constraintEqualToConstant:58]
@@ -648,8 +662,8 @@ static void AddWinFirework(CALayer *container, CGPoint origin, UIColor *color,
     self.winValueLabel.textColor = self.game.lastWin > 0 ? [UIColor colorWithRed:1 green:0.92 blue:0.22 alpha:1] : UIColor.whiteColor;
     self.spinsValueLabel.text = [self formatNumber:self.game.spinCount];
     self.messageLabel.text = self.game.message.uppercaseString;
-    self.miniLabel.text = [self shortCredits:self.game.bet * 20];
-    self.majorLabel.text = [self shortCredits:self.game.bet * 120];
+    self.lineCountLabel.text = @"5 lines";
+    self.bonusCountLabel.text = @"4+ symbols";
     self.grandLabel.text = [self shortCredits:self.game.jackpot];
     [self.spinButton setTitle:(self.game.spinning ? @"SPINNING" : @"SPIN") forState:UIControlStateNormal];
 
@@ -659,10 +673,16 @@ static void AddWinFirework(CALayer *container, CGPoint origin, UIColor *color,
     self.maxButton.enabled = enabled;
     self.resetButton.enabled = enabled;
     self.spinButton.enabled = enabled;
+    self.settingsButton.enabled = enabled;
+    self.rulesButton.enabled = enabled;
 
-    [UIView animateWithDuration:0.16 animations:^{
-        [self.slotView applyReels:self.game.reels spinning:self.game.spinning];
-    }];
+    if (UIAccessibilityIsReduceMotionEnabled()) {
+        [self.slotView applyReels:self.game.reels spinning:NO];
+    } else {
+        [UIView animateWithDuration:0.16 animations:^{
+            [self.slotView applyReels:self.game.reels spinning:self.game.spinning];
+        }];
+    }
 }
 
 - (void)showWinCelebrationIfNeeded {
@@ -738,7 +758,7 @@ static void AddWinFirework(CALayer *container, CGPoint origin, UIColor *color,
         }
     }
 
-    [self.slotView celebrate];
+    if (!reduceMotion) [self.slotView celebrate];
 
     if (reduceMotion) {
         overlay.alpha = 1;
@@ -797,6 +817,7 @@ static void AddWinFirework(CALayer *container, CGPoint origin, UIColor *color,
 
 - (void)applicationDidEnterBackground:(NSNotification *)notification {
     [self clearWinCelebration];
+    [self.game saveProgress];
 }
 
 - (void)clearWinCelebration {
@@ -833,9 +854,18 @@ static void AddWinFirework(CALayer *container, CGPoint origin, UIColor *color,
 }
 
 - (void)resetGame {
+    if (self.game.spinning || self.presentedViewController) return;
     [self clearWinCelebration];
-    [self.game resetSession];
-    [self refreshUI];
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Reset game progress?"
+        message:@"This replaces your saved balance, bet, spin count and jackpot with a new game and 50,000 free virtual coins. It cannot be undone."
+        preferredStyle:UIAlertControllerStyleAlert];
+    [alert addAction:[UIAlertAction actionWithTitle:@"Keep playing" style:UIAlertActionStyleCancel handler:nil]];
+    __weak typeof(self) weakSelf = self;
+    [alert addAction:[UIAlertAction actionWithTitle:@"Reset progress" style:UIAlertActionStyleDestructive handler:^(UIAlertAction *action) {
+        [weakSelf.game resetSession];
+        [weakSelf refreshUI];
+    }]];
+    [self presentViewController:alert animated:YES completion:nil];
 }
 
 - (void)spin {
@@ -857,60 +887,52 @@ static void AddWinFirework(CALayer *container, CGPoint origin, UIColor *color,
 }
 
 - (void)showPaytable {
-    [self clearWinCelebration];
-    UIViewController *controller = [[UIViewController alloc] init];
-    controller.view.backgroundColor = [UIColor colorWithRed:0.07 green:0.07 blue:0.15 alpha:1];
-    controller.title = @"Paytable";
-
-    UIScrollView *scroll = [[UIScrollView alloc] init];
-    scroll.translatesAutoresizingMaskIntoConstraints = NO;
-    [controller.view addSubview:scroll];
-
-    UIStackView *stack = [[UIStackView alloc] init];
-    stack.axis = UILayoutConstraintAxisVertical;
-    stack.spacing = 12;
-    stack.translatesAutoresizingMaskIntoConstraints = NO;
-    [scroll addSubview:stack];
-
-    [NSLayoutConstraint activateConstraints:@[
-        [scroll.leadingAnchor constraintEqualToAnchor:controller.view.leadingAnchor],
-        [scroll.trailingAnchor constraintEqualToAnchor:controller.view.trailingAnchor],
-        [scroll.topAnchor constraintEqualToAnchor:controller.view.safeAreaLayoutGuide.topAnchor],
-        [scroll.bottomAnchor constraintEqualToAnchor:controller.view.bottomAnchor],
-        [stack.leadingAnchor constraintEqualToAnchor:scroll.contentLayoutGuide.leadingAnchor constant:16],
-        [stack.trailingAnchor constraintEqualToAnchor:scroll.contentLayoutGuide.trailingAnchor constant:-16],
-        [stack.topAnchor constraintEqualToAnchor:scroll.contentLayoutGuide.topAnchor constant:16],
-        [stack.bottomAnchor constraintEqualToAnchor:scroll.contentLayoutGuide.bottomAnchor constant:-16],
-        [stack.widthAnchor constraintEqualToAnchor:scroll.frameLayoutGuide.widthAnchor constant:-32]
-    ]];
-
-    for (SlotSymbol *symbol in SlotSymbol.allSymbols) {
-        UILabel *row = [self label:[NSString stringWithFormat:@"%@   3+ pays x%ld   %@", symbol.title, (long)symbol.payoutMultiplier, [self formatNumber:self.game.bet * symbol.payoutMultiplier * 3 / 5]] size:16 weight:UIFontWeightBlack color:UIColor.whiteColor];
-        row.backgroundColor = [UIColor colorWithWhite:1 alpha:0.08];
-        row.layer.cornerRadius = 8;
-        row.layer.masksToBounds = YES;
-        row.numberOfLines = 2;
-        [stack addArrangedSubview:row];
-        [row.heightAnchor constraintGreaterThanOrEqualToConstant:54].active = YES;
-    }
-
-    for (NSDictionary *line in self.game.paylines) {
-        NSArray *rows = line[@"rows"];
-        NSMutableArray *displayRows = [NSMutableArray array];
-        for (NSNumber *row in rows) {
-            [displayRows addObject:@(row.integerValue + 1).stringValue];
-        }
-        UILabel *label = [self label:[NSString stringWithFormat:@"%@  %@", line[@"name"], [displayRows componentsJoinedByString:@"-"]] size:14 weight:UIFontWeightBold color:[UIColor colorWithWhite:1 alpha:0.78]];
-        [stack addArrangedSubview:label];
-    }
-
-    UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:controller];
-    controller.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithImage:[UIImage systemImageNamed:@"xmark"] style:UIBarButtonItemStylePlain target:self action:@selector(dismissPaytable)];
-    [self presentViewController:nav animated:YES completion:nil];
+    if (self.game.spinning) return;
+    [self presentInformation:[SMSInformationViewController rulesControllerWithBet:self.game.bet jackpot:self.game.jackpot]];
 }
 
-- (void)dismissPaytable {
-    [self dismissViewControllerAnimated:YES completion:nil];
+- (void)presentInformation:(UIViewController *)controller {
+    [self clearWinCelebration];
+    UINavigationController *navigation = [[UINavigationController alloc] initWithRootViewController:controller];
+    navigation.overrideUserInterfaceStyle = UIUserInterfaceStyleDark;
+    navigation.modalPresentationStyle = UIModalPresentationPageSheet;
+    void (^present)(void) = ^{ [self presentViewController:navigation animated:YES completion:nil]; };
+    UIViewController *current = self.presentedViewController;
+    if (current.isBeingDismissed && current.transitionCoordinator) {
+        [current.transitionCoordinator animateAlongsideTransition:nil completion:^(id<UIViewControllerTransitionCoordinatorContext> context) {
+            if (!context.isCancelled) present();
+        }];
+    } else if (current) {
+        [self dismissViewControllerAnimated:YES completion:present];
+    } else {
+        present();
+    }
+}
+
+- (void)showSettings {
+    if (self.game.spinning || self.presentedViewController) return;
+    [self clearWinCelebration];
+    UIAlertController *sheet = [UIAlertController alertControllerWithTitle:@"Game settings"
+        message:@"Progress is saved on this device. All coins are free and have no cash value."
+        preferredStyle:UIAlertControllerStyleActionSheet];
+    __weak typeof(self) weakSelf = self;
+    [sheet addAction:[UIAlertAction actionWithTitle:@"Rules & payouts" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+        [weakSelf showPaytable];
+    }]];
+    [sheet addAction:[UIAlertAction actionWithTitle:@"Privacy" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+        [weakSelf presentInformation:[SMSInformationViewController privacyController]];
+    }]];
+    [sheet addAction:[UIAlertAction actionWithTitle:@"About & support" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+        [weakSelf presentInformation:[SMSInformationViewController aboutController]];
+    }]];
+    [sheet addAction:[UIAlertAction actionWithTitle:@"Add 50,000 free coins" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+        [weakSelf.game addDemoCredits];
+        [weakSelf refreshUI];
+    }]];
+    [sheet addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
+    sheet.popoverPresentationController.sourceView = self.settingsButton;
+    sheet.popoverPresentationController.sourceRect = self.settingsButton.bounds;
+    [self presentViewController:sheet animated:YES completion:nil];
 }
 
 - (NSString *)formatNumber:(NSInteger)value {

@@ -40,6 +40,10 @@ typedef NS_ENUM(NSInteger, SlotSymbolType) {
 @property (nonatomic, readonly) NSInteger spinCount;
 @property (nonatomic, copy, readonly) NSArray<NSNumber *> *betOptions;
 
+/// Supply an isolated defaults suite for state restoration checks.
+- (instancetype)initWithDefaults:(NSUserDefaults *)defaults;
+- (void)saveProgress;
+- (void)addDemoCredits;
 - (void)increaseBet;
 - (void)decreaseBet;
 - (void)maxBet;

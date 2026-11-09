@@ -1,4 +1,7 @@
 #import "SlotGame.h"
+#import "SMSGameRules.h"
+#import <CoreFoundation/CoreFoundation.h>
+#import <math.h>
 
 @implementation SlotSymbol
 
@@ -61,16 +64,7 @@
 }
 
 - (NSInteger)payoutMultiplier {
-    switch (self.type) {
-        case SlotSymbolTypeNova: return 2;
-        case SlotSymbolTypeCrown: return 3;
-        case SlotSymbolTypeGem: return 4;
-        case SlotSymbolTypeBell: return 5;
-        case SlotSymbolTypeCoin: return 6;
-        case SlotSymbolTypeSeven: return 8;
-        case SlotSymbolTypeWild: return 10;
-        case SlotSymbolTypeBonus: return 12;
-    }
+    return self.type >= 0 && self.type < SMSSymbols ? SMSMultipliers[self.type] : 0;
 }
 
 - (NSArray<UIColor *> *)palette {
@@ -88,188 +82,251 @@
 
 @end
 
+static NSString * const SMSGameSaveKey = @"SMSNativeGame.v1";
+
+static BOOL SMSStoredInteger(id value, int64_t minimum, int64_t maximum, int64_t *output) {
+    if (![value isKindOfClass:NSNumber.class] ||
+        CFGetTypeID((__bridge CFTypeRef)value) == CFBooleanGetTypeID()) return NO;
+    double number = [value doubleValue];
+    if (!isfinite(number) || number < minimum || number > maximum) return NO;
+    int64_t integer = [value longLongValue];
+    if ((double)integer != number) return NO;
+    *output = integer;
+    return YES;
+}
+
 @interface SlotGame ()
-
-- (void)advanceSpinAtTick:(NSInteger)tick
-                      step:(void (^ _Nullable)(void))step
-                completion:(void (^ _Nullable)(void))completion;
-
+- (void)advanceSpinAtTick:(NSInteger)tick;
+- (void)finishPendingSpin;
+- (NSArray<NSArray<SlotSymbol *> *> *)randomReels;
+- (SlotSymbol *)weightedSymbol;
+- (NSDictionary<NSString *, NSNumber *> *)evaluateReels:(NSArray<NSArray<SlotSymbol *> *> *)reels jackpot:(NSInteger)jackpot;
+- (BOOL)restoreState:(id)state;
+- (NSDictionary *)snapshotWithReels:(NSArray<NSArray<SlotSymbol *> *> *)reels
+                           balance:(NSInteger)balance win:(NSInteger)win
+                           jackpot:(NSInteger)jackpot spins:(NSInteger)spins;
 @end
 
-@implementation SlotGame
+@implementation SlotGame {
+    NSUserDefaults *_defaults;
+    NSDictionary *_pendingState;
+    NSUInteger _spinGeneration;
+    void (^_spinStep)(void);
+    void (^_spinCompletion)(void);
+}
 
 - (instancetype)init {
+    return [self initWithDefaults:NSUserDefaults.standardUserDefaults];
+}
+
+- (instancetype)initWithDefaults:(NSUserDefaults *)defaults {
     self = [super init];
     if (self) {
+        _defaults = defaults;
         _betOptions = @[@100, @250, @500, @1000, @2500, @5000];
-        [self resetSession];
+        if ([self restoreState:[defaults objectForKey:SMSGameSaveKey]]) {
+            _message = @"Welcome back";
+        } else {
+            [self resetSession];
+        }
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(applicationWillResignActive:)
+            name:UIApplicationWillResignActiveNotification object:nil];
     }
     return self;
 }
 
+- (void)dealloc {
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
+}
+
 - (NSArray<NSDictionary<NSString *,id> *> *)paylines {
-    return @[
-        @{@"name": @"Top", @"rows": @[@0, @0, @0, @0, @0]},
-        @{@"name": @"Middle", @"rows": @[@1, @1, @1, @1, @1]},
-        @{@"name": @"Bottom", @"rows": @[@2, @2, @2, @2, @2]},
-        @{@"name": @"Rise", @"rows": @[@2, @1, @0, @1, @2]},
-        @{@"name": @"Dip", @"rows": @[@0, @1, @2, @1, @0]}
-    ];
+    NSArray *names = @[@"Top", @"Middle", @"Bottom", @"Rise", @"Dip"];
+    NSMutableArray *lines = [NSMutableArray array];
+    for (int line = 0; line < SMSLines; line++) {
+        NSMutableArray *rows = [NSMutableArray array];
+        for (int col = 0; col < SMSColumns; col++) [rows addObject:@(SMSPaylines[line][col])];
+        [lines addObject:@{@"name": names[line], @"rows": rows}];
+    }
+    return lines;
 }
 
 - (void)increaseBet {
+    if (self.spinning) return;
     NSUInteger index = [self.betOptions indexOfObject:@(self.bet)];
     if (index != NSNotFound && index + 1 < self.betOptions.count) {
         _bet = self.betOptions[index + 1].integerValue;
+        [self saveProgress];
     }
 }
 
 - (void)decreaseBet {
+    if (self.spinning) return;
     NSUInteger index = [self.betOptions indexOfObject:@(self.bet)];
     if (index != NSNotFound && index > 0) {
         _bet = self.betOptions[index - 1].integerValue;
+        [self saveProgress];
     }
 }
 
 - (void)maxBet {
+    if (self.spinning) return;
     _bet = self.betOptions.lastObject.integerValue;
+    [self saveProgress];
 }
 
 - (void)resetSession {
-    _balance = 50000;
+    if (self.spinning) return;
+    _balance = SMSStartingCredits;
     _bet = 500;
     _lastWin = 0;
-    _jackpot = 1250000;
+    _jackpot = SMSStartingJackpot;
     _spinCount = 0;
     _message = @"Ready";
-    _spinning = NO;
     _reels = [self randomReels];
+    [self saveProgress];
+}
+
+- (void)addDemoCredits {
+    if (self.spinning) return;
+    _balance = SMSClampCredits(self.balance + SMSStartingCredits);
+    _message = @"Free virtual coins added";
+    [self saveProgress];
+}
+
+- (NSDictionary *)snapshotWithReels:(NSArray<NSArray<SlotSymbol *> *> *)reels
+                           balance:(NSInteger)balance win:(NSInteger)win
+                           jackpot:(NSInteger)jackpot spins:(NSInteger)spins {
+    NSMutableArray *board = [NSMutableArray arrayWithCapacity:SMSColumns * SMSRows];
+    for (NSArray<SlotSymbol *> *column in reels)
+        for (SlotSymbol *symbol in column) [board addObject:@(symbol.type)];
+    return @{@"version": @1, @"balance": @(balance), @"bet": @(self.bet), @"lastWin": @(win),
+             @"jackpot": @(jackpot), @"spinCount": @(spins), @"board": board};
+}
+
+- (BOOL)restoreState:(id)state {
+    if (![state isKindOfClass:NSDictionary.class]) return NO;
+    int64_t version, balance, bet, win, jackpot, spins;
+    if (!SMSStoredInteger(state[@"version"], 1, 1, &version) ||
+        !SMSStoredInteger(state[@"balance"], 0, SMSMaxCredits, &balance) ||
+        !SMSStoredInteger(state[@"bet"], 100, 5000, &bet) ||
+        !SMSStoredInteger(state[@"lastWin"], 0, SMSMaxCredits, &win) ||
+        !SMSStoredInteger(state[@"jackpot"], SMSStartingJackpot, SMSMaxCredits, &jackpot) ||
+        !SMSStoredInteger(state[@"spinCount"], 0, SMSMaxSpins, &spins) ||
+        !SMSValidState(balance, bet, win, jackpot, spins)) return NO;
+    id board = state[@"board"];
+    if (![board isKindOfClass:NSArray.class] || [board count] != SMSColumns * SMSRows) return NO;
+    NSMutableArray *reels = [NSMutableArray array];
+    for (int col = 0; col < SMSColumns; col++) {
+        NSMutableArray *column = [NSMutableArray array];
+        for (int row = 0; row < SMSRows; row++) {
+            int64_t symbol;
+            if (!SMSStoredInteger(board[col * SMSRows + row], 0, SMSSymbols - 1, &symbol)) return NO;
+            [column addObject:[SlotSymbol symbolWithType:(SlotSymbolType)symbol]];
+        }
+        [reels addObject:[column copy]];
+    }
+    _balance = (NSInteger)balance;
+    _bet = (NSInteger)bet;
+    _lastWin = (NSInteger)win;
+    _jackpot = (NSInteger)jackpot;
+    _spinCount = (NSInteger)spins;
+    _reels = [reels copy];
+    return YES;
+}
+
+- (void)saveProgress {
+    // During animation the final transaction is already the authoritative save.
+    NSDictionary *state = _pendingState ?: [self snapshotWithReels:self.reels balance:self.balance
+        win:self.lastWin jackpot:self.jackpot spins:self.spinCount];
+    [_defaults setObject:state forKey:SMSGameSaveKey];
 }
 
 - (void)beginSpinWithStep:(void (^ _Nullable)(void))step
                completion:(void (^ _Nullable)(void))completion {
-    if (self.spinning) {
+    if (self.spinning) return;
+    if (self.balance < self.bet || self.spinCount >= SMSMaxSpins) {
+        _message = self.balance < self.bet ? @"Lower your bet or add free coins in Settings" : @"Reset progress to start a new session";
+        if (completion) completion();
         return;
     }
-
-    if (self.balance < self.bet) {
-        _message = @"Add demo credits";
-        if (completion) {
-            completion();
-        }
-        return;
-    }
-
+    // Resolve and persist one complete turn before showing animation. Restoring
+    // never replays a wager or rerolls an interrupted spin.
+    NSInteger nextJackpot = SMSClampCredits(self.jackpot + MAX(25, self.bet / 20));
+    NSArray *finalReels = [self randomReels];
+    NSDictionary *result = [self evaluateReels:finalReels jackpot:nextJackpot];
+    NSInteger win = [result[@"total"] integerValue];
+    _pendingState = [self snapshotWithReels:finalReels
+        balance:SMSClampCredits(self.balance - self.bet + win) win:win
+        jackpot:[result[@"jackpotWin"] integerValue] > 0 ? SMSStartingJackpot : nextJackpot
+        spins:self.spinCount + 1];
+    [self saveProgress];
     _balance -= self.bet;
-    _jackpot += MAX(25, self.bet / 20);
+    _jackpot = nextJackpot;
     _lastWin = 0;
     _message = @"Spinning";
     _spinning = YES;
-
-    [self advanceSpinAtTick:0 step:step completion:completion];
+    _spinGeneration++;
+    _spinStep = [step copy];
+    _spinCompletion = [completion copy];
+    if (UIAccessibilityIsReduceMotionEnabled()) [self finishPendingSpin];
+    else [self advanceSpinAtTick:0];
 }
 
-- (void)advanceSpinAtTick:(NSInteger)tick
-                      step:(void (^ _Nullable)(void))step
-                completion:(void (^ _Nullable)(void))completion {
-    if (tick < 18) {
-        self->_reels = [self randomReels];
-        if (step) {
-            step();
-        }
-
-        NSInteger nextTick = tick + 1;
-        NSTimeInterval delay = 0.045 + (nextTick * 0.005);
-        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delay * NSEC_PER_SEC)),
-                       dispatch_get_main_queue(),
-                       ^{
-            [self advanceSpinAtTick:nextTick step:step completion:completion];
-        });
+- (void)advanceSpinAtTick:(NSInteger)tick {
+    if (!self.spinning) return;
+    if (tick >= 18) {
+        [self finishPendingSpin];
         return;
     }
-
-    self->_reels = [self randomReels];
-    NSDictionary *result = [self evaluateReels:self.reels];
-    NSInteger total = [result[@"total"] integerValue];
-    NSInteger jackpotWin = [result[@"jackpotWin"] integerValue];
-    self->_lastWin = total;
-    self->_balance += total;
-    self->_spinCount += 1;
-
-    if (jackpotWin > 0) {
-        self->_message = @"Grand jackpot";
-        self->_jackpot = 1250000;
-    } else if (total > self.bet * 20) {
-        self->_message = @"Mega win";
-    } else if (total > 0) {
-        self->_message = @"Nice win";
-    } else {
-        self->_message = @"Try again";
-    }
-
-    self->_spinning = NO;
-    if (completion) {
-        completion();
-    }
+    NSUInteger generation = _spinGeneration;
+    _reels = [self randomReels];
+    if (_spinStep) _spinStep();
+    // A callback may synchronously settle this spin and start another one.
+    if (!self.spinning || _spinGeneration != generation) return;
+    NSTimeInterval delay = 0.045 + ((tick + 1) * 0.005);
+    __weak typeof(self) weakSelf = self;
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delay * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        SlotGame *self = weakSelf;
+        if (self && self.spinning && self->_spinGeneration == generation) [self advanceSpinAtTick:tick + 1];
+    });
 }
 
-- (NSDictionary<NSString *, NSNumber *> *)evaluateReels:(NSArray<NSArray<SlotSymbol *> *> *)reels {
-    NSInteger lineWin = 0;
+- (void)finishPendingSpin {
+    if (!self.spinning || !_pendingState) return;
+    NSInteger awardedJackpot = _jackpot;
+    NSInteger wager = _bet;
+    [self restoreState:_pendingState];
+    _pendingState = nil;
+    _spinning = NO;
+    _spinGeneration++;
+    // A reset pool after this spin signals the visible 7+ BONUS jackpot.
+    _message = self.jackpot == SMSStartingJackpot && awardedJackpot > SMSStartingJackpot ? @"Grand jackpot"
+        : (self.lastWin > wager * 20 ? @"Mega win" : (self.lastWin > 0 ? @"Nice win" : @"Try again"));
+    void (^completion)(void) = _spinCompletion;
+    _spinCompletion = nil;
+    _spinStep = nil;
+    if (completion) completion();
+}
 
-    for (NSDictionary *payline in self.paylines) {
-        NSArray<NSNumber *> *rows = payline[@"rows"];
-        NSMutableArray<SlotSymbol *> *symbols = [NSMutableArray array];
-        for (NSInteger column = 0; column < rows.count; column++) {
-            [symbols addObject:reels[column][rows[column].integerValue]];
-        }
+- (void)applicationWillResignActive:(NSNotification *)notification {
+    [self finishPendingSpin];
+    [self saveProgress];
+}
 
-        SlotSymbol *anchor = nil;
-        for (SlotSymbol *symbol in symbols) {
-            if (symbol.type != SlotSymbolTypeWild) {
-                anchor = symbol;
-                break;
-            }
-        }
-        if (!anchor) {
-            anchor = [SlotSymbol symbolWithType:SlotSymbolTypeWild];
-        }
-
-        NSInteger matchCount = 0;
-        for (SlotSymbol *symbol in symbols) {
-            if (symbol.type == anchor.type || symbol.type == SlotSymbolTypeWild || anchor.type == SlotSymbolTypeWild) {
-                matchCount += 1;
-            } else {
-                break;
-            }
-        }
-
-        if (matchCount >= 3) {
-            lineWin += self.bet * anchor.payoutMultiplier * matchCount / 5;
-        }
-    }
-
-    NSInteger bonusCount = 0;
-    for (NSArray<SlotSymbol *> *column in reels) {
-        for (SlotSymbol *symbol in column) {
-            if (symbol.type == SlotSymbolTypeBonus) {
-                bonusCount += 1;
-            }
-        }
-    }
-
-    NSInteger bonusWin = bonusCount >= 4 ? self.bet * bonusCount * 4 : 0;
-    BOOL jackpotHit = bonusCount >= 7 || arc4random_uniform(2500) == 0;
-    NSInteger jackpotWin = jackpotHit ? self.jackpot : 0;
-    return @{@"lineWin": @(lineWin), @"bonusWin": @(bonusWin), @"jackpotWin": @(jackpotWin), @"total": @(lineWin + bonusWin + jackpotWin)};
+- (NSDictionary<NSString *, NSNumber *> *)evaluateReels:(NSArray<NSArray<SlotSymbol *> *> *)reels jackpot:(NSInteger)jackpot {
+    int board[SMSColumns][SMSRows];
+    for (int col = 0; col < SMSColumns; col++)
+        for (int row = 0; row < SMSRows; row++) board[col][row] = (int)reels[col][row].type;
+    SMSGameResult result = SMSEvaluateBoard(board, self.bet, jackpot);
+    return @{@"lineWin": @(result.lineWin), @"bonusWin": @(result.bonusWin),
+             @"jackpotWin": @(result.jackpotWin), @"total": @(result.total)};
 }
 
 - (NSArray<NSArray<SlotSymbol *> *> *)randomReels {
     NSMutableArray *columns = [NSMutableArray array];
-    for (NSInteger column = 0; column < 5; column++) {
+    for (NSInteger column = 0; column < SMSColumns; column++) {
         NSMutableArray *rows = [NSMutableArray array];
-        for (NSInteger row = 0; row < 3; row++) {
-            [rows addObject:[self weightedSymbol]];
-        }
+        for (NSInteger row = 0; row < SMSRows; row++) [rows addObject:[self weightedSymbol]];
         [columns addObject:[rows copy]];
     }
     return [columns copy];
@@ -277,18 +334,12 @@
 
 - (SlotSymbol *)weightedSymbol {
     NSInteger totalWeight = 0;
-    for (SlotSymbol *symbol in SlotSymbol.allSymbols) {
-        totalWeight += symbol.weight;
-    }
-
+    for (SlotSymbol *symbol in SlotSymbol.allSymbols) totalWeight += symbol.weight;
     NSInteger ticket = arc4random_uniform((uint32_t)totalWeight) + 1;
     for (SlotSymbol *symbol in SlotSymbol.allSymbols) {
         ticket -= symbol.weight;
-        if (ticket <= 0) {
-            return symbol;
-        }
+        if (ticket <= 0) return symbol;
     }
-
     return [SlotSymbol symbolWithType:SlotSymbolTypeNova];
 }
 
