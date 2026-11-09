@@ -15,57 +15,99 @@ int main(void) {
             SMSRemoteConfiguration *(^resolve)(NSDictionary *) = ^(NSDictionary *values) {
                 return [SMSRemoteConfiguration configurationWithValues:values defaults:defaults];
             };
+            NSDictionary *csc = @{@"open": @YES, @"url": @"https://csc.example/game?x=1#start",
+                                  @"preShowAtt": @YES, @"source": @NO,
+                                  @"allowed_hosts": @[@"LOGIN.EXAMPLE"],
+                                  @"query_params": @{@"a": @"b"},
+                                  @"adjustToken": @" abcdef123456 ", @"adjEnvironment": @" SANDBOX ",
+                                  @"adjustStartEvent": @"abc123", @"adjustEvent_a": @"def456"};
+            NSDictionary *us = @{@"open": @YES, @"url": @"https://us.example/",
+                                 @"source": @YES, @"adjustToken": @"123456abcdef"};
             SMSRemoteConfiguration *config = resolve(@{});
-            Check(!config.webEnabled && [config.routeSource isEqual:@"no_project"], @"empty first launch is native");
-            config = resolve(@{@"web_enabled": @YES, @"url": @"https://legacy.example/"});
-            Check(!config.webEnabled, @"legacy fields do not bypass project selection");
-            config = resolve(@{@"project": @" \n H Appt \t", @"happt_url": @"https://one.example/game?x=1#start",
-                               @"allowed_hosts": @[@"LOGIN.EXAMPLE"], @"query_params": @{@"a": @"b"},
-                               @"apfDevKey": @" test-key "});
-            Check([config.project isEqual:@"happt"], @"project strips all whitespace and lowercases");
-            Check([config.urlKey isEqual:@"happt_url"], @"dynamic key");
-            Check(config.webEnabled && [config.webConfiguration[@"web_type"] isEqual:@"us"], @"arbitrary project uses US");
-            Check([config.routeSource isEqual:@"remote_url"], @"remote URL preferred");
+            Check(!config.webEnabled, @"empty first launch is native");
+            [defaults setObject:@"csc" forKey:@"SMSLaunchProject.v1"];
+            [defaults setObject:@{@"csc": @{@"url": @"https://legacy.example/"}}
+                         forKey:@"SMSLaunchWebConfigurations.v1"];
+            [defaults setObject:@{@"AdjustAppToken": @"legacy123456"} forKey:@"SMSLaunchAttribution.v1"];
+            config = resolve(@{@"project": @"csc", @"csc_url": @"https://legacy.example/", @"open": @YES});
+            Check(!config.webEnabled, @"old project, URL cache and flat fields cannot authorize web");
+            config = resolve(@{@"csc_info": csc, @"us_info": us});
+            Check(config.webEnabled && [config.project isEqual:@"csc"], @"both open prefers CSC");
+            Check([config.urlKey isEqual:@"url"], @"Parameter Store uses direct url field");
+            Check([config.routeSource isEqual:@"remote_url"], @"fresh URL preferred");
+            Check([config.webConfiguration[@"web_type"] isEqual:@"csc"], @"CSC bridge mode");
+            Check([config.webConfiguration[@"url"] hasSuffix:@"?x=1#start"], @"query and fragment preserved");
+            Check([config.webConfiguration[@"preShowAtt"] boolValue], @"ATT flag parsed");
+            Check(![config.webConfiguration[@"source"] boolValue], @"source flag preserved separately");
             Check([config.webConfiguration[@"allowed_hosts"] containsObject:@"login.example"], @"host normalized");
-            Check([config.webConfiguration[@"allowed_hosts"] containsObject:@"one.example"], @"entry host included");
-            config = resolve(@{@"project": @"csc", @"csc_url": @"https://wrong.example/"});
-            Check([config.project isEqual:@"happt"], @"saved project cannot be reassigned");
-            Check([config.routeSource isEqual:@"cached_url"], @"missing selected URL uses cache");
-            Check([config.attributionConfiguration[@"AppsFlyerDevKey"] isEqual:@"test-key"], @"credential cache fallback");
-            config = resolve(@{@"happt_url": @"https://two.example/new"});
-            Check([config.webConfiguration[@"url"] isEqual:@"https://two.example/new"], @"fresh URL replaces saved URL");
+            Check([config.webConfiguration[@"allowed_hosts"] containsObject:@"csc.example"], @"entry host included");
+            Check([config.attributionConfiguration[@"AdjustAppToken"] isEqual:@"abcdef123456"], @"selected store credentials trimmed");
+            Check([config.attributionConfiguration[@"AdjustEnvironment"] isEqual:@"sandbox"], @"environment normalized");
+            Check([config.attributionConfiguration[@"AdjustStartEvent"] isEqual:@"abc123"], @"startup event parsed");
+            Check([config.attributionConfiguration[@"adjustEvent_a"] isEqual:@"def456"], @"named event parsed");
+            config = resolve(@{});
+            Check(!config.webEnabled && !config.attributionConfiguration.count, @"failed fetch cannot use cached open or credentials");
+            config = resolve(@{@"csc_info": @{@"open": @YES}});
+            Check(config.webEnabled && [config.routeSource isEqual:@"cached_url"], @"fresh open authorizes retained URL after failed fetch");
+            Check(![config.webConfiguration[@"preShowAtt"] boolValue], @"ATT flag never falls back to stale cache");
+            Check(!config.attributionConfiguration[@"AdjustAppToken"], @"credentials do not fall back to cache");
+            config = resolve(@{@"csc_info": @{@"open": @YES, @"url": @"https://new.example/"}});
+            Check([config.webConfiguration[@"url"] isEqual:@"https://new.example/"], @"new URL replaces cached URL");
             Check(![config.webConfiguration[@"allowed_hosts"] containsObject:@"login.example"], @"old hosts do not leak");
-            for (id invalid in @[@"", @"http://bad.example/", @"https://user:pass@bad.example/", @"javascript:alert(1)",
-                                 @"https://", @42, NSNull.null]) {
-                config = resolve(@{@"happt_url": invalid});
-                Check([config.routeSource isEqual:@"cached_url"], @"invalid remote URL uses valid cache");
-                Check([config.webConfiguration[@"url"] isEqual:@"https://two.example/new"], @"invalid URL never overwrites cache");
+            for (id invalid in @[@"", @"http://bad.example/", @"https://user:pass@bad.example/",
+                                 @"javascript:alert(1)", @"https://", @42, NSNull.null]) {
+                config = resolve(@{@"csc_info": @{@"open": @YES, @"url": invalid, @"source": @YES}});
+                Check([config.routeSource isEqual:@"cached_url"], @"fresh open with invalid URL uses valid same-store cache");
+                Check([config.webConfiguration[@"url"] isEqual:@"https://new.example/"], @"invalid URL never overwrites cache");
+                Check([config.webConfiguration[@"source"] boolValue], @"cached URL uses fresh source flag");
             }
-            config = resolve(@{@"happt_url": @"https://three.example/", @"allowed_hosts": @[@"other.example/path"],
-                               @"query_params": @{@"bad": @42, @"good": @"value"}});
-            Check([config.routeSource isEqual:@"remote_url"], @"valid URL wins even with malformed optional metadata");
-            Check([config.webConfiguration[@"allowed_hosts"] isEqual:@[@"three.example"]], @"invalid hosts grant no access");
-            Check([config.webConfiguration[@"query_params"] isEqual:@{@"good": @"value"}], @"non-string parameters filtered");
-            config = resolve(@{});
-            Check(config.webEnabled && [config.routeSource isEqual:@"cached_url"], @"offline launch reuses cache");
-            [defaults removePersistentDomainForName:suite];
-            config = resolve(@{@"project": @" CSC ", @"csc_url": @"https://csc.example/"});
-            Check([config.webConfiguration[@"web_type"] isEqual:@"csc"], @"CSC selects separate bridge mode");
-            [defaults removeObjectForKey:@"SMSLaunchProject.v1"];
-            config = resolve(@{@"project": @"us", @"us_url": @"http://invalid.example/"});
-            Check(!config.webEnabled && [config.routeSource isEqual:@"no_valid_url"], @"CSC cache cannot serve US");
-            config = resolve(@{@"project": @"csc", @"csc_url": @"https://csc.example/"});
-            Check([config.project isEqual:@"us"] && !config.webEnabled, @"project remains sticky even before URL arrives");
-            [defaults setObject:@42 forKey:@"SMSLaunchProject.v1"];
-            [defaults setObject:@"corrupt" forKey:@"SMSLaunchWebConfigurations.v1"];
-            config = resolve(@{@"project": @"us", @"us_url": @"https://us.example/"});
-            Check(config.webEnabled, @"corrupt defaults recover with valid remote values");
-            [defaults setObject:@{@"us": @{@"url": @"http://invalid.example/"}} forKey:@"SMSLaunchWebConfigurations.v1"];
-            config = resolve(@{});
+            config = resolve(@{@"csc_info": @{@"open": @NO}, @"us_info": us});
+            Check(config.webEnabled && [config.project isEqual:@"us"], @"CSC closed selects open US despite old project");
+            Check([config.webConfiguration[@"web_type"] isEqual:@"us"], @"US bridge mode");
+            Check(![config.webConfiguration[@"allowed_hosts"] containsObject:@"new.example"], @"store hosts isolated");
+            Check([config.attributionConfiguration[@"AdjustAppToken"] isEqual:@"123456abcdef"], @"store credentials isolated");
+            config = resolve(@{@"csc_info": @{@"open": @YES}, @"us_info": @{@"open": @NO}});
+            Check(!config.webEnabled, @"close revokes prior CSC URL cache");
+            config = resolve(@{@"csc_info": csc, @"us_info": @{@"open": @YES, @"url": @"invalid"}});
+            Check([config.routeSource isEqual:@"remote_url"], @"invalid lower-priority URL does not corrupt selected outcome");
+            for (id invalidOpen in @[@NO, @1, @0, @"true", @"false", NSNull.null]) {
+                (void)resolve(@{@"csc_info": csc});
+                config = resolve(@{@"csc_info": @{@"open": invalidOpen, @"url": @"https://csc.example/"}});
+                Check(!config.webEnabled, @"only an actual Boolean true authorizes web");
+                config = resolve(@{@"csc_info": @{@"open": @YES}});
+                Check(!config.webEnabled, @"invalid or false open revokes snapshot");
+            }
+            (void)resolve(@{@"csc_info": csc});
+            config = resolve(@{@"csc_info": @{@"url": @"https://csc.example/"}});
+            Check(!config.webEnabled, @"missing open in a received store stays native");
+            config = resolve(@{@"csc_info": @{@"open": @YES}, @"us_info": us});
+            Check([config.project isEqual:@"us"], @"open CSC without usable URL falls through to US");
+            config = resolve(@{@"csc_info": @{@"open": @YES, @"url": @"https://clean.example/",
+                                              @"preShowAtt": @"true", @"source": @1,
+                                              @"allowed_hosts": @[@"other.example/path", @"*.example", @"login.example:443"],
+                                              @"query_params": @{@"bad": @42, @"good": @"value"},
+                                              @"adjustToken": @"invalid", @"adjustStartEvent": @"bad",
+                                              @"adjustEvent_a": @"!@#$%^", @"adjEnvironment": @"unknown"}});
+            Check([config.webConfiguration[@"allowed_hosts"] isEqual:@[@"clean.example"]], @"invalid hosts grant no access");
+            Check([config.webConfiguration[@"query_params"] isEqual:@{@"good": @"value"}], @"non-string query parameters filtered");
+            Check(![config.webConfiguration[@"preShowAtt"] boolValue] && ![config.webConfiguration[@"source"] boolValue], @"malformed optional Boolean flags default false");
+            Check(!config.attributionConfiguration[@"AdjustAppToken"] &&
+                  !config.attributionConfiguration[@"AdjustStartEvent"] &&
+                  !config.attributionConfiguration[@"adjustEvent_a"], @"invalid Adjust tokens filtered");
+            Check([config.attributionConfiguration[@"AdjustEnvironment"] isEqual:@"production"], @"unknown environment defaults production");
+            [defaults setObject:@"corrupt" forKey:@"SMSParameterStoreWebConfigurations.v2"];
+            config = resolve(@{@"csc_info": csc});
+            Check(config.webEnabled, @"corrupt defaults recover with fresh remote values");
+            [defaults setObject:@{@"csc_info": @{@"url": @"http://invalid.example/"}}
+                         forKey:@"SMSParameterStoreWebConfigurations.v2"];
+            config = resolve(@{@"csc_info": @{@"open": @YES}});
             Check(!config.webEnabled, @"cached URL is revalidated");
-            [defaults removePersistentDomainForName:suite];
-            config = resolve(@{@"project": NSNull.null, @"us_url": @"https://us.example/"});
-            Check(!config.webEnabled, @"non-string project stays native");
+            for (id invalidStore in @[@42, NSNull.null, @[@"bad"], @"bad"]) {
+                config = resolve(@{@"csc_info": invalidStore});
+                Check(!config.webEnabled, @"malformed store stays native");
+            }
+            config = resolve(@{@"csc_info": @{@"open": @NO}, @"us_info": @{@"open": @NO}});
+            Check(!config.webEnabled && !config.webConfiguration.count, @"both closed stays native");
             printf("PASS: %lu launch routing checks\n", (unsigned long)checks);
         } @finally {
             [defaults removePersistentDomainForName:suite];

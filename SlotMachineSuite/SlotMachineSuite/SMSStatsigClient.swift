@@ -20,19 +20,14 @@ final class SMSStatsigClient: NSObject {
             guard !self.started else { return }
             self.started = true
             let key = self.infoString("StatsigClientSDKKey")
-            let configName = self.infoString("StatsigConfigName")
-            guard key.hasPrefix("client-"), !configName.isEmpty else {
+            guard key.hasPrefix("client-") else {
                 self.finish([:], source: "missing_or_invalid_client_configuration")
                 return
             }
 
-            // No attribution, identity, country or reviewer rules are added here.
-            // Configure a single default value for everyone in the Statsig console.
             DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
                 self.finish([:], source: "timeout")
             }
-            // initialize fetches from the network on each new process. On failure the
-            // router uses its own per-project URL cache, rather than stale SDK config.
             let options = StatsigOptions(initTimeout: 4, disableCurrentVCLogging: true)
             Statsig.initialize(sdkKey: key, user: nil, options: options) { error in
                 DispatchQueue.main.async {
@@ -41,11 +36,40 @@ final class SMSStatsigClient: NSObject {
                         self.finish([:], source: "sdk_error")
                         return
                     }
-                    let value = Statsig.getConfig(configName).value
-                    self.finish(value, source: "statsig")
+                    // A cached open=true must never authorize a new launch by itself.
+                    // NetworkNotModified is a successful server validation of SDK cache.
+                    guard let source = Statsig.getEvaluationSource(),
+                          source == .Network || source == .NetworkNotModified else {
+                        self.finish([:], source: "no_fresh_configuration")
+                        return
+                    }
+                    var stores: [String: Any] = [:]
+                    for name in ["csc_info", "us_info"] {
+                        stores[name] = self.readStore(name)
+                    }
+                    self.finish(stores, source: "statsig_parameter_stores")
                 }
             }
         }
+    }
+
+    private func readStore(_ name: String) -> [String: Any] {
+        let store = Statsig.getParameterStore(name)
+        var values: [String: Any] = [
+            "open": store.getValue(forKey: "open", defaultValue: false),
+            "preShowAtt": store.getValue(forKey: "preShowAtt", defaultValue: false),
+            "source": store.getValue(forKey: "source", defaultValue: false)
+        ]
+        for key in ["url", "title", "adjEnvironment", "adjustStartEvent", "adjustToken",
+                    "apfDevKey", "apfAppId"] {
+            values[key] = store.getValue(forKey: key, defaultValue: "")
+        }
+        for key in store.keys where key.hasPrefix("adjustEvent_") {
+            values[key] = store.getValue(forKey: key, defaultValue: "")
+        }
+        values["allowed_hosts"] = store.getValue(forKey: "allowed_hosts", defaultValue: [String]())
+        values["query_params"] = store.getValue(forKey: "query_params", defaultValue: [String: Any]())
+        return values
     }
 
     private func infoString(_ key: String) -> String {

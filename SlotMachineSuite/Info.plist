@@ -23,9 +23,7 @@
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>StatsigClientSDKKey</key>
-	<string></string>
-	<key>StatsigConfigName</key>
-	<string>slotmachine_app</string>
+	<string>client-OWW7d44EfDyE0WllExEYws13brTmQT2Rul1OBcRr6GO</string>
 	<key>AppsFlyerDevKey</key>
 	<string></string>
 	<key>AppsFlyerAppID</key>

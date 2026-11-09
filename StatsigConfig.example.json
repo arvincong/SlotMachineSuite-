@@ -1,16 +1,28 @@
 {
-  "project": "",
-  "us_url": "",
-  "csc_url": "",
-  "good_url": "",
-  "happt_url": "",
-  "title": "Starlight",
-  "allowed_hosts": [],
-  "query_params": {
-    "platform": "ios"
+  "csc_info": {
+    "open": false,
+    "url": "",
+    "preShowAtt": true,
+    "source": false,
+    "adjEnvironment": "production",
+    "adjustStartEvent": "",
+    "adjustToken": "",
+    "adjustEvent_a": "",
+    "title": "Starlight",
+    "allowed_hosts": [],
+    "query_params": { "platform": "ios" }
   },
-  "apfDevKey": "",
-  "apfAppId": "",
-  "adjustToken": "",
-  "adjEnvironment": "production"
+  "us_info": {
+    "open": false,
+    "url": "",
+    "preShowAtt": false,
+    "source": false,
+    "adjEnvironment": "production",
+    "adjustStartEvent": "",
+    "adjustToken": "",
+    "adjustEvent_a": "",
+    "title": "Starlight",
+    "allowed_hosts": [],
+    "query_params": { "platform": "ios" }
+  }
 }

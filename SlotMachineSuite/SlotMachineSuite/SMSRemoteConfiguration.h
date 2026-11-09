@@ -2,7 +2,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-/// Resolves sticky project + fresh project_url, with a per-project persistent fallback.
+/// Resolves csc_info/us_info using fresh Boolean open, with a per-store URL fallback.
 @interface SMSRemoteConfiguration : NSObject
 @property (nonatomic, readonly) BOOL webEnabled;
 @property (nonatomic, copy, readonly) NSString *project;

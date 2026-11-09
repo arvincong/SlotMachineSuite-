@@ -23,6 +23,7 @@
     BOOL _didConfigure;
     NSDictionary *_launchOptions;
     NSDictionary<NSString *, NSString *> *_remoteConfiguration;
+    BOOL _didTrackStartEvent;
 #if SMS_HAS_APPSFLYER
     AppsFlyerLib *_appsFlyer;
     NSMutableArray<NSDictionary *> *_pendingLinks;
@@ -58,6 +59,26 @@
     _remoteConfiguration = [configuration copy];
     [self configureAppsFlyerWithLaunchOptions:_launchOptions];
     [self configureAdjust];
+    [self trackConfiguredStartEvent];
+}
+
+- (void)trackConfiguredStartEvent {
+#if SMS_HAS_ADJUST
+    if (_didTrackStartEvent || !_adjustConfigured) return;
+    NSString *token = [self infoString:@"AdjustStartEvent"];
+    if (![self isValidAdjustEventToken:token]) return;
+    ADJEvent *event = [[ADJEvent alloc] initWithEventToken:token];
+    if (!event) return;
+    _didTrackStartEvent = YES;
+    [Adjust trackEvent:event];
+#endif
+}
+
+- (BOOL)isValidAdjustEventToken:(id)value {
+    if (![value isKindOfClass:NSString.class] || [value length] != 6) return NO;
+    NSCharacterSet *invalid = [[NSCharacterSet characterSetWithCharactersInString:
+        @"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"] invertedSet];
+    return [value rangeOfCharacterFromSet:invalid].location == NSNotFound;
 }
 
 - (NSDictionary<NSString *, NSString *> *)webQueryParameters {
@@ -91,7 +112,11 @@
 
 #if SMS_HAS_ADJUST
     id tokenValue = values[@"adjust_event_token"];
-    if (_adjustConfigured && [tokenValue isKindOfClass:NSString.class] && [tokenValue length] > 0) {
+    if (![self isValidAdjustEventToken:tokenValue]) {
+        NSString *key = [name hasPrefix:@"adjustEvent_"] ? name : [@"adjustEvent_" stringByAppendingString:name];
+        tokenValue = _remoteConfiguration[key];
+    }
+    if (_adjustConfigured && [self isValidAdjustEventToken:tokenValue]) {
         ADJEvent *event = [[ADJEvent alloc] initWithEventToken:tokenValue];
         if (event) {
             [Adjust trackEvent:event];

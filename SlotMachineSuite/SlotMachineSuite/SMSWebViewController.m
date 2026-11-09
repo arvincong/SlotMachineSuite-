@@ -47,6 +47,8 @@ static void *SMSCanGoBackContext = &SMSCanGoBackContext;
 @property (nonatomic) BOOL attRequestInFlight;
 @property (nonatomic, copy) NSString *attDocumentID;
 @property (nonatomic) NSUInteger attGeneration;
+@property (nonatomic) BOOL initialLoadPending;
+@property (nonatomic) BOOL initialATTRequestInFlight;
 @end
 
 @implementation SMSWebViewController
@@ -139,6 +141,33 @@ static void *SMSCanGoBackContext = &SMSCanGoBackContext;
                    name:UIApplicationWillResignActiveNotification object:nil];
     [center addObserver:self selector:@selector(applicationDidBecomeActive:)
                    name:UIApplicationDidBecomeActiveNotification object:nil];
+    self.initialLoadPending = YES;
+}
+
+- (void)loadInitialPageIfNeeded {
+    if (!self.initialLoadPending || self.initialATTRequestInFlight || self.tornDown || !self.visible ||
+        UIApplication.sharedApplication.applicationState != UIApplicationStateActive) return;
+    NSString *description = [NSBundle.mainBundle objectForInfoDictionaryKey:@"NSUserTrackingUsageDescription"];
+    if ([self.configuration[@"preShowAtt"] boolValue] &&
+        ATTrackingManager.trackingAuthorizationStatus == ATTrackingManagerAuthorizationStatusNotDetermined &&
+        [description isKindOfClass:NSString.class] && description.length) {
+        self.initialATTRequestInFlight = YES;
+        __weak typeof(self) weakSelf = self;
+        [ATTrackingManager requestTrackingAuthorizationWithCompletionHandler:^(ATTrackingManagerAuthorizationStatus status) {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                SMSWebViewController *self = weakSelf;
+                if (!self || self.tornDown) return;
+                self.initialATTRequestInFlight = NO;
+                // Do not prompt again if iOS left the status undetermined.
+                NSMutableDictionary *snapshot = [self.configuration mutableCopy];
+                snapshot[@"preShowAtt"] = @NO;
+                self.configuration = snapshot;
+                [self loadInitialPageIfNeeded];
+            });
+        }];
+        return;
+    }
+    self.initialLoadPending = NO;
     [self retryLoading];
 }
 
@@ -200,6 +229,7 @@ static void *SMSCanGoBackContext = &SMSCanGoBackContext;
 - (void)viewDidAppear:(BOOL)animated {
     [super viewDidAppear:animated];
     self.visible = YES;
+    [self loadInitialPageIfNeeded];
     [self updateMediaSuspension];
     [self processPendingATT];
 }
@@ -261,15 +291,18 @@ static void *SMSCanGoBackContext = &SMSCanGoBackContext;
 }
 
 - (NSDictionary<NSString *, NSString *> *)nativeQueryParameters {
-    if (![self isCSC]) return [[AttributionManager sharedManager] webQueryParameters];
-    NSMutableDictionary *parameters = [NSMutableDictionary dictionary];
-    [[self cscDeviceInfo] enumerateKeysAndObjectsUsingBlock:^(NSString *key, id value, BOOL *stop) {
-        if ([value isKindOfClass:NSString.class]) parameters[key] = value;
-        else {
-            NSData *json = [NSJSONSerialization dataWithJSONObject:value options:NSJSONWritingFragmentsAllowed error:nil];
-            if (json) parameters[key] = [[NSString alloc] initWithData:json encoding:NSUTF8StringEncoding];
-        }
-    }];
+    NSMutableDictionary *parameters = [[[AttributionManager sharedManager] webQueryParameters] mutableCopy];
+    if ([self isCSC]) {
+        [parameters removeAllObjects];
+        [[self cscDeviceInfo] enumerateKeysAndObjectsUsingBlock:^(NSString *key, id value, BOOL *stop) {
+            if ([value isKindOfClass:NSString.class]) parameters[key] = value;
+            else {
+                NSData *json = [NSJSONSerialization dataWithJSONObject:value options:NSJSONWritingFragmentsAllowed error:nil];
+                if (json) parameters[key] = [[NSString alloc] initWithData:json encoding:NSUTF8StringEncoding];
+            }
+        }];
+    }
+    parameters[@"source"] = [self.configuration[@"source"] boolValue] ? @"true" : @"false";
     return parameters;
 }
 
@@ -578,6 +611,15 @@ static void *SMSCanGoBackContext = &SMSCanGoBackContext;
         [self openExternalURL:url];
     } else if ([method isEqualToString:@"show_att"]) {
         [self prepareATTForCurrentDocument];
+    } else if ([method isEqualToString:@"log_event"]) {
+        if (![data isKindOfClass:NSDictionary.class]) { replyHandler(nil, @"Expected event data"); return; }
+        NSString *name = data[@"name"];
+        id values = data[@"values"];
+        if (![name isKindOfClass:NSString.class] || !name.length ||
+            (values && (![values isKindOfClass:NSDictionary.class] || ![NSJSONSerialization isValidJSONObject:values]))) {
+            replyHandler(nil, @"Invalid event"); return;
+        }
+        [[AttributionManager sharedManager] logEvent:name values:values ?: @{}];
     } else if ([method isEqualToString:@"close"] ||
                ([method isEqualToString:@"openUrlByWebView"] && [data isEqual:@""])) {
         replyHandler(@{@"status": @"ok"}, nil);
@@ -755,6 +797,7 @@ static void *SMSCanGoBackContext = &SMSCanGoBackContext;
 }
 
 - (void)applicationDidBecomeActive:(NSNotification *)notification {
+    [self loadInitialPageIfNeeded];
     [self updateMediaSuspension];
     [self processPendingATT];
 }
