@@ -33,11 +33,13 @@ PODS:
     - nanopb/encode (= 3.30910.0)
   - nanopb/decode (3.30910.0)
   - nanopb/encode (3.30910.0)
+  - Statsig (1.62.9)
 
 DEPENDENCIES:
   - Adjust/AdjustGoogleOdm (>= 5.4.1)
   - AppsFlyerFramework (>= 7.0.0)
   - GoogleAdsOnDeviceConversion
+  - Statsig (~> 1.62.9)
 
 SPEC REPOS:
   trunk:
@@ -47,6 +49,7 @@ SPEC REPOS:
     - GoogleAdsOnDeviceConversion
     - GoogleUtilities
     - nanopb
+    - Statsig
 
 SPEC CHECKSUMS:
   Adjust: 3fbf26d0880cb25d15653d68278c0c8771718458
@@ -55,7 +58,8 @@ SPEC CHECKSUMS:
   GoogleAdsOnDeviceConversion: e3b71da24ff4cf01cf520756ac1c2b93c07b86ff
   GoogleUtilities: 4f2618a4a1e762a1ee134a1e2323bba9843e06da
   nanopb: fad817b59e0457d11a5dfbde799381cd727c1275
+  Statsig: e37340a58416726e0c82779c83b59cca42b531a0
 
-PODFILE CHECKSUM: 283b9d1291acf5ffeef57ea6366eb88327259185
+PODFILE CHECKSUM: 30ca2bf7dc62a3876b254648ae142efa869ef7c5
 
 COCOAPODS: 1.17.0
