@@ -3,14 +3,14 @@ import Statsig
 
 /// One launch decision per process. All state and callbacks belong to the main queue.
 @objc(SMSStatsigClient)
-final class SMSStatsigClient: NSObject {
-    @objc(sharedClient) static let shared = SMSStatsigClient()
+public final class SMSStatsigClient: NSObject {
+    @objc(sharedClient) public static let shared = SMSStatsigClient()
     private var started = false
     private var result: ([String: Any], String)?
     private var completions: [([String: Any], String) -> Void] = []
 
     @objc(fetchConfigurationWithCompletion:)
-    func fetchConfiguration(completion: @escaping ([String: Any], String) -> Void) {
+    public func fetchConfiguration(completion: @escaping ([String: Any], String) -> Void) {
         DispatchQueue.main.async {
             if let result = self.result {
                 completion(result.0, result.1)
