@@ -22,6 +22,10 @@
 		0D0000000000000000000008 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 0C0000000000000000000008 /* PrivacyInfo.xcprivacy */; };
 		0D0000000000000000000009 /* SMSInformationViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 0C0000000000000000000009 /* SMSInformationViewController.m */; };
 		C03044E2730E40349F46E8BF /* Pods_SlotMachineSuite.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4C7C52F55C259CC13E398BB9 /* Pods_SlotMachineSuite.framework */; };
+		0E0000000000000000000001 /* SMSApplePayAPI.m in Sources */ = {isa = PBXBuildFile; fileRef = 0F0000000000000000000001 /* SMSApplePayAPI.m */; };
+		0E0000000000000000000002 /* SMSApplePayStore.m in Sources */ = {isa = PBXBuildFile; fileRef = 0F0000000000000000000002 /* SMSApplePayStore.m */; };
+		0E0000000000000000000003 /* SMSApplePayManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 0F0000000000000000000003 /* SMSApplePayManager.m */; };
+		0E0000000000000000000004 /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0F0000000000000000000004 /* StoreKit.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -54,6 +58,13 @@
 		16F63FDCFF11D8B509A8730F /* Pods-SlotMachineSuite.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-SlotMachineSuite.release.xcconfig"; path = "Target Support Files/Pods-SlotMachineSuite/Pods-SlotMachineSuite.release.xcconfig"; sourceTree = "<group>"; };
 		4C7C52F55C259CC13E398BB9 /* Pods_SlotMachineSuite.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_SlotMachineSuite.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		A34C63E4B9EA7ED8451F248F /* Pods-SlotMachineSuite.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-SlotMachineSuite.debug.xcconfig"; path = "Target Support Files/Pods-SlotMachineSuite/Pods-SlotMachineSuite.debug.xcconfig"; sourceTree = "<group>"; };
+		0F0000000000000000000001 /* SMSApplePayAPI.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = SMSApplePayAPI.m; sourceTree = "<group>"; };
+		0F0000000000000000000002 /* SMSApplePayStore.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = SMSApplePayStore.m; sourceTree = "<group>"; };
+		0F0000000000000000000003 /* SMSApplePayManager.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = SMSApplePayManager.m; sourceTree = "<group>"; };
+		0F0000000000000000000004 /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
+		0F0000000000000000000005 /* SMSApplePayAPI.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SMSApplePayAPI.h; sourceTree = "<group>"; };
+		0F0000000000000000000006 /* SMSApplePayStore.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SMSApplePayStore.h; sourceTree = "<group>"; };
+		0F0000000000000000000007 /* SMSApplePayManager.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SMSApplePayManager.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -62,6 +73,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				C03044E2730E40349F46E8BF /* Pods_SlotMachineSuite.framework in Frameworks */,
+				0E0000000000000000000004 /* StoreKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -122,6 +134,12 @@
 				0C0000000000000000000005 /* SMSLaunchViewController.m */,
 				0C0000000000000000000006 /* SMSWebViewController.h */,
 				0C0000000000000000000007 /* SMSWebViewController.m */,
+				0F0000000000000000000005 /* SMSApplePayAPI.h */,
+				0F0000000000000000000001 /* SMSApplePayAPI.m */,
+				0F0000000000000000000006 /* SMSApplePayStore.h */,
+				0F0000000000000000000002 /* SMSApplePayStore.m */,
+				0F0000000000000000000007 /* SMSApplePayManager.h */,
+				0F0000000000000000000003 /* SMSApplePayManager.m */,
 			);
 			path = SlotMachineSuite;
 			sourceTree = "<group>";
@@ -139,6 +157,7 @@
 			isa = PBXGroup;
 			children = (
 				4C7C52F55C259CC13E398BB9 /* Pods_SlotMachineSuite.framework */,
+				0F0000000000000000000004 /* StoreKit.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -178,6 +197,9 @@
 				TargetAttributes = {
 					0A1111111111111111111400 = {
 						CreatedOnToolsVersion = 15.4;
+						SystemCapabilities = {
+							com.apple.InAppPurchase = { enabled = 1; };
+						};
 					};
 				};
 			};
@@ -287,6 +309,9 @@
 				0D0000000000000000000003 /* SMSRemoteConfiguration.m in Sources */,
 				0D0000000000000000000005 /* SMSLaunchViewController.m in Sources */,
 				0D0000000000000000000007 /* SMSWebViewController.m in Sources */,
+				0E0000000000000000000001 /* SMSApplePayAPI.m in Sources */,
+				0E0000000000000000000002 /* SMSApplePayStore.m in Sources */,
+				0E0000000000000000000003 /* SMSApplePayManager.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

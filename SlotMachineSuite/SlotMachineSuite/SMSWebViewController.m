@@ -1,6 +1,7 @@
 #import "SMSWebViewController.h"
 #import "SlotMachineViewController.h"
 #import "AttributionManager.h"
+#import "SMSApplePayManager.h"
 #import <WebKit/WebKit.h>
 #import <AppTrackingTransparency/AppTrackingTransparency.h>
 #import <AdSupport/AdSupport.h>
@@ -49,6 +50,12 @@ static void *SMSCanGoBackContext = &SMSCanGoBackContext;
 @property (nonatomic) NSUInteger attGeneration;
 @property (nonatomic) BOOL initialLoadPending;
 @property (nonatomic) BOOL initialATTRequestInFlight;
+@property (nonatomic, copy) NSString *applePayDocumentID;
+@property (nonatomic, copy) NSString *applePayUserID;
+@property (nonatomic, copy) NSString *applePayBaseURL;
+@property (nonatomic) NSUInteger applePayGeneration;
+@property (nonatomic) NSUInteger applePaySessionGeneration;
+@property (nonatomic, copy) NSString *applePayScopeID;
 @end
 
 @implementation SMSWebViewController
@@ -141,6 +148,8 @@ static void *SMSCanGoBackContext = &SMSCanGoBackContext;
                    name:UIApplicationWillResignActiveNotification object:nil];
     [center addObserver:self selector:@selector(applicationDidBecomeActive:)
                    name:UIApplicationDidBecomeActiveNotification object:nil];
+    [center addObserver:self selector:@selector(applePayStatus:)
+                   name:SMSApplePayStatusNotification object:SMSApplePayManager.sharedManager];
     self.initialLoadPending = YES;
 }
 
@@ -431,6 +440,11 @@ static void *SMSCanGoBackContext = &SMSCanGoBackContext;
 - (void)invalidateDocument {
     self.trustedDocument = NO;
     self.documentGeneration++;
+    self.applePaySessionGeneration++;
+    self.applePayScopeID = nil;
+    self.applePayDocumentID = nil;
+    self.applePayUserID = nil;
+    self.applePayBaseURL = nil;
     self.attPending = NO;
     self.attDocumentID = nil;
     [self finishWebDialog:NO];
@@ -557,6 +571,7 @@ static void *SMSCanGoBackContext = &SMSCanGoBackContext;
     NSString *command = body[@"cmd"];
     if (![command isKindOfClass:NSString.class]) return;
     NSDictionary *data = [body[@"data"] isKindOfClass:NSDictionary.class] ? body[@"data"] : @{};
+    if ([self handleApplePayCommand:command data:data]) return;
     if ([command isEqualToString:@"openUrlByDefaultBrowser"]) {
         NSString *value = data[@"url"];
         NSURL *url = [value isKindOfClass:NSString.class] ? [NSURL URLWithString:value] : nil;
@@ -577,6 +592,136 @@ static void *SMSCanGoBackContext = &SMSCanGoBackContext;
     } else if ([command isEqualToString:@"close"]) {
         [self returnToNative];
     }
+}
+
+#pragma mark - Apple IAP bridge (US cmd/data)
+
+- (BOOL)hasApplePayDocumentSession {
+    return self.applePayDocumentID.length && self.applePayGeneration == self.documentGeneration &&
+        [SMSApplePayManager.sharedManager hasSessionForUser:self.applePayUserID baseURL:self.applePayBaseURL];
+}
+
+- (BOOL)handleApplePayCommand:(NSString *)command data:(NSDictionary *)data {
+    if (![@[@"configureApplePaySession", @"clearApplePaySession", @"openApplePay", @"getApplePayProducts",
+            @"retryApplePay", @"restoreApplePay", @"getPendingApplePayOrders"] containsObject:command]) return NO;
+    SMSApplePayManager *manager = SMSApplePayManager.sharedManager;
+    if ([command isEqual:@"clearApplePaySession"]) {
+        // Also cancel a configure request whose JavaScript identity lookup has not completed yet.
+        NSString *previousScope = self.applePayScopeID ?: @"";
+        self.applePaySessionGeneration++;
+        self.applePayScopeID = nil;
+        self.applePayDocumentID = nil; self.applePayUserID = nil; self.applePayBaseURL = nil;
+        [manager clearSession];
+        [self.webView callAsyncJavaScript:@"if(window.__smsApplePayScope===scope){window.__smsApplePayScope='';}"
+                               arguments:@{@"scope": previousScope}
+                                 inFrame:nil inContentWorld:WKContentWorld.pageWorld completionHandler:nil];
+        return YES;
+    }
+    if ([command isEqual:@"configureApplePaySession"]) {
+        NSString *previousScope = self.applePayScopeID ?: @"";
+        [self.webView callAsyncJavaScript:@"if(window.__smsApplePayScope===scope){window.__smsApplePayScope='';}"
+                               arguments:@{@"scope": previousScope}
+                                 inFrame:nil inContentWorld:WKContentWorld.pageWorld completionHandler:nil];
+        NSUInteger sessionGeneration = ++self.applePaySessionGeneration;
+        NSString *scopeID = NSUUID.UUID.UUIDString;
+        self.applePayScopeID = scopeID;
+        self.applePayDocumentID = nil; self.applePayUserID = nil; self.applePayBaseURL = nil;
+        [manager clearSession];
+        NSURL *baseURL = SMSApplePayCanonicalBaseURL([NSURL URLWithString:SMSApplePayString(data[@"apiBaseURL"])]);
+        NSString *userID = SMSApplePayString(data[@"userID"]);
+        NSString *token = SMSApplePayString(data[@"token"]);
+        // Reuse the native HTTPS host policy; never send the user's credentials to arbitrary hosts.
+        if (![self isAllowedWebURL:baseURL] || !userID.length || !token.length) {
+            [self showNotice:@"支付会话无效：API 必须是授权域名下的 HTTPS 根地址，且需要 userID/token。"]; return YES;
+        }
+        NSUInteger generation = self.documentGeneration;
+        __weak typeof(self) weakSelf = self;
+        [self.webView evaluateJavaScript:[@"window." stringByAppendingString:SMSDocumentIDKey]
+                      completionHandler:^(id documentID, NSError *error) {
+            SMSWebViewController *self = weakSelf;
+            if (!self || self.tornDown || error || !self.trustedDocument || generation != self.documentGeneration ||
+                sessionGeneration != self.applePaySessionGeneration || ![scopeID isEqual:self.applePayScopeID] ||
+                ![documentID isKindOfClass:NSString.class] || ![self isAllowedWebURL:self.webView.URL]) return;
+            [self.webView callAsyncJavaScript:
+                @"if(window.__smsWebDocumentID!==documentID){return false;} window.__smsApplePayScope=scope; return true;"
+                                   arguments:@{@"documentID": documentID, @"scope": scopeID}
+                                     inFrame:nil inContentWorld:WKContentWorld.pageWorld
+                           completionHandler:^(id installed, NSError *scopeError) {
+                SMSWebViewController *self = weakSelf;
+                if (!self || self.tornDown || scopeError || ![installed isEqual:@YES] || !self.trustedDocument ||
+                    generation != self.documentGeneration || sessionGeneration != self.applePaySessionGeneration ||
+                    ![scopeID isEqual:self.applePayScopeID]) return;
+                NSError *configurationError = nil;
+                self.applePayDocumentID = documentID; self.applePayGeneration = generation;
+                self.applePayUserID = userID; self.applePayBaseURL = baseURL.absoluteString;
+                NSString *gameVersion = SMSApplePayString(data[@"gameVersion"]);
+                if (!gameVersion.length) gameVersion = [NSBundle.mainBundle objectForInfoDictionaryKey:@"CFBundleVersion"] ?: @"";
+                BOOL configured = [manager configureWithBaseURL:baseURL userID:userID token:token
+                                                   deviceTrack:SMSApplePayString(data[@"deviceTrack"])
+                                                   gameVersion:gameVersion error:&configurationError];
+                [self emitApplePayEvent:@{@"status": configured ? @"session_ready" : @"failed",
+                                         @"msg": configurationError.localizedDescription ?: @""}
+                            documentID:documentID generation:generation];
+                if (!configured) { self.applePayDocumentID = nil; self.applePayUserID = nil; self.applePayBaseURL = nil; }
+            }];
+        }];
+        return YES;
+    }
+    if (![self hasApplePayDocumentSession]) {
+        [self showNotice:@"请先调用 configureApplePaySession，等待 session_ready 后再使用支付接口。"]; return YES;
+    }
+    if ([command isEqual:@"openApplePay"]) {
+        if (!self.visible || UIApplication.sharedApplication.applicationState != UIApplicationStateActive) {
+            [self emitApplePayEvent:@{@"status": @"failed", @"msg": @"请在前台页面发起购买。"}
+                        documentID:self.applePayDocumentID generation:self.applePayGeneration];
+        } else {
+            [manager purchaseProduct:SMSApplePayString(data[@"productID"]) orderNo:SMSApplePayString(data[@"orderNo"])
+                              amount:SMSApplePayString(data[@"amount"])];
+        }
+    } else if ([command isEqual:@"getApplePayProducts"]) {
+        NSArray *identifiers = [data[@"productIDs"] isKindOfClass:NSArray.class] ? data[@"productIDs"] : @[];
+        NSString *documentID = self.applePayDocumentID;
+        NSUInteger generation = self.applePayGeneration;
+        NSUInteger sessionGeneration = self.applePaySessionGeneration;
+        __weak typeof(self) weakSelf = self;
+        [manager fetchProducts:identifiers completion:^(NSArray<NSDictionary *> *products, NSError *error) {
+            SMSWebViewController *self = weakSelf;
+            if (!self || sessionGeneration != self.applePaySessionGeneration || ![self hasApplePayDocumentSession]) return;
+            [self emitApplePayEvent:@{@"status": error ? @"failed" : @"products", @"products": products,
+                                         @"msg": error.localizedDescription ?: @""}
+                            documentID:documentID generation:generation];
+        }];
+    } else if ([command isEqual:@"retryApplePay"]) {
+        [manager retryPendingPurchases];
+    } else if ([command isEqual:@"restoreApplePay"]) {
+        [manager restorePurchases];
+    } else if ([command isEqual:@"getPendingApplePayOrders"]) {
+        [self emitApplePayEvent:@{@"status": @"pending_orders", @"orders": [manager pendingOrders]}
+                    documentID:self.applePayDocumentID generation:self.applePayGeneration];
+    }
+    return YES;
+}
+
+- (void)applePayStatus:(NSNotification *)notification {
+    NSDictionary *event = notification.userInfo;
+    if (![self hasApplePayDocumentSession] || ![event[@"userID"] isEqual:self.applePayUserID] ||
+        ![event[@"baseURL"] isEqual:self.applePayBaseURL]) return;
+    [self emitApplePayEvent:event documentID:self.applePayDocumentID generation:self.applePayGeneration];
+}
+
+- (void)emitApplePayEvent:(NSDictionary *)event documentID:(NSString *)documentID generation:(NSUInteger)generation {
+    if (self.tornDown || !self.trustedDocument || !documentID.length || generation != self.documentGeneration ||
+        ![self isAllowedWebURL:self.webView.URL]) return;
+    NSString *script =
+        @"if(location.protocol==='https:' && hosts.indexOf(location.hostname.toLowerCase())!==-1 && "
+         "window.__smsWebDocumentID===documentID && window.__smsApplePayScope===scope){"
+         "window.dispatchEvent(new CustomEvent('ON_APPLEPAY_STATUS',{detail:event}));"
+         "if(window.cc && window.cc.director && typeof window.cc.director.emit==='function')"
+         "{window.cc.director.emit('ON_APPLEPAY_STATUS',event);}}";
+    [self.webView callAsyncJavaScript:script
+                           arguments:@{@"hosts": self.allowedHosts.allObjects, @"documentID": documentID,
+                                       @"scope": self.applePayScopeID ?: @"", @"event": event}
+                             inFrame:nil inContentWorld:WKContentWorld.pageWorld completionHandler:nil];
 }
 
 // CSC uses method/data and Promise replies, independently from the US cmd/data bridge.
